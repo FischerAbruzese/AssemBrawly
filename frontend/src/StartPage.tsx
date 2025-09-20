@@ -1,39 +1,57 @@
-import React, { useState } from "react";
-import { Play, Users, BookOpen, Code, Trophy, Zap } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Play, Users, BookOpen, Code, Trophy, Zap, X } from "lucide-react";
 import type { Problem, RunResponse } from "./WebSocketInterfaces";
-
-interface WebSocketProps {
-  isConnected: boolean;
-  problem: Problem;
-  userCode: string;
-  serverRunResponse: RunResponse;
-  submitCode: () => void;
-  setUserCode: (code: string) => void;
-}
+import type { WebSocketProps } from "./WebSocket";
 
 interface StartPageProps {
-  setGameId: (gameId: string) => void;
-  webSocket: WebSocketProps;
+    webSocketProps: WebSocketProps;
 }
 
-const StartPage: React.FC<StartPageProps> = ({ setGameId, webSocket }) => {
+const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
   const [gameCode, setGameCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
-  const { isConnected } = webSocket;
+  const { isConnected, setGameId, requestNewGame } = webSocketProps;
+
+  // Auto-hide toast after 5 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      setShowToast(true);
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        // Clear message after animation completes
+        setTimeout(() => setToastMessage(""), 300);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  // Function to show a toast message
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+  };
+
+  const handleCloseToast = () => {
+    setShowToast(false);
+    setTimeout(() => setToastMessage(""), 300);
+  };
 
   const handleCreateGame = () => {
-    // Generate a random game ID for demonstration
-    const newGameId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setGameId(newGameId);
-    console.log("Creating new game with ID:", newGameId);
+    requestNewGame();
+    console.log("Creating new game");
+    showToastMessage("Creating new game ...");
   };
 
   const handleJoinGame = () => {
     if (gameCode.trim() && playerName.trim()) {
       setGameId(gameCode.trim());
       console.log(`Joining game ${gameCode} as ${playerName}`);
+      showToastMessage(
+        `Attempting to join game ${gameCode} as ${playerName} ...`
+      );
     }
   };
 
@@ -214,9 +232,17 @@ const StartPage: React.FC<StartPageProps> = ({ setGameId, webSocket }) => {
               </div>
               <button
                 onClick={handleCreateGame}
-                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition-colors duration-150"
+                disabled={!isConnected}
+                className={`
+                  w-full px-6 py-3 
+                  ${
+                    !isConnected
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 text-white font-medium"
+                  }
+                  rounded transition-colors duration-150`}
               >
-                Create New Game
+                {gameCode ? "Game code: " + gameCode : "Create New Game"}
               </button>
             </div>
 
@@ -248,8 +274,17 @@ const StartPage: React.FC<StartPageProps> = ({ setGameId, webSocket }) => {
               </div>
               <button
                 onClick={handleJoinGame}
-                disabled={!gameCode.trim() || !playerName.trim()}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded transition-colors duration-150"
+                disabled={
+                  !gameCode.trim() || !playerName.trim() || !isConnected
+                }
+                className={`
+                  w-full px-6 py-3 
+                  ${
+                    !gameCode.trim() || !playerName.trim() || !isConnected
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  }
+                  rounded transition-colors duration-150`}
               >
                 Join Game
               </button>
@@ -279,6 +314,35 @@ const StartPage: React.FC<StartPageProps> = ({ setGameId, webSocket }) => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4">
+          <div
+            className={`
+              max-w-md w-full bg-white border border-gray-200 rounded-lg shadow-lg
+              transform transition-all duration-300 ease-in-out
+              ${
+                showToast
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-full opacity-0"
+              }
+            `}
+          >
+            <div className="p-4 flex items-center justify-between">
+              <p className="text-gray-800 text-sm font-medium pr-4">
+                {toastMessage}
+              </p>
+              <button
+                onClick={handleCloseToast}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

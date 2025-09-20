@@ -1,21 +1,12 @@
 import React, { useState, useCallback } from "react";
 import { Play, Menu } from "lucide-react";
 import { useWebSocket } from "./WebSocket";
+import type { WebSocketProps } from "./WebSocket";
 import type { Problem, RunResponse } from "./WebSocketInterfaces";
 
-interface WebSocketProps {
-  isConnected: boolean;
-  problem: Problem;
-  userCode: string;
-  serverRunResponse: RunResponse;
-  submitCode: () => void;
-  setUserCode: (code: string) => void;
-}
-
 interface GamePageProps {
-  gameId: string;
-  setGameId: (gameId: string) => void;
-  webSocket: WebSocketProps;
+  setGameRunning: (gameRunning: boolean) => void;
+  webSocketProps: WebSocketProps;
 }
 
 interface ResizeHandleProps {
@@ -68,16 +59,16 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({
   );
 };
 
-const GamePage: React.FC<GamePageProps> = ({ gameId, setGameId, webSocket }) => {
-  // Destructure WebSocket props
+const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) => {
   const {
     isConnected,
     problem,
     userCode,
     serverRunResponse,
+    gameId,
     submitCode,
     setUserCode,
-  } = webSocket;
+  } = webSocketProps;
 
   // Layout state
   const [leftPanelWidth, setLeftPanelWidth] = useState(30); // percentage
@@ -172,7 +163,7 @@ const GamePage: React.FC<GamePageProps> = ({ gameId, setGameId, webSocket }) => 
   const rightConsoleHeight = 100 - rightCodeHeight;
 
   const handleBackToStart = () => {
-    setGameId("");
+    setGameRunning(false);
   };
 
   return (

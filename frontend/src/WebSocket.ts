@@ -11,16 +11,35 @@ const blankRunResponse: RunResponse = {
   success: false,
 };
 
-export const useWebSocket = (connectionLocation: string) => {
+export interface WebSocketProps {
+  isConnected: boolean;
+  problem: Problem;
+  userCode: string;
+  serverRunResponse: RunResponse;
+  gameId: string;
+  submitCode: () => void;
+  setUserCode: (code: string) => void;
+  setProblem: (problem: Problem) => void;
+  setServerRunResponse: (runResponse: RunResponse) => void;
+  setGameId: (gameId: string) => void;
+  requestNewGame: () => void;
+}
+export const useWebSocket = (
+  connectionLocation: string,
+  setGameRunning : (gameRunning: boolean) => void
+) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [problem, setProblem] = useState<Problem>(blankProblem);
   const [userCode, setUserCode] = useState<string>("");
-  const [serverRunResponse, setServerRunResponse] = useState<RunResponse>(blankRunResponse);
+  const [serverRunResponse, setServerRunResponse] =
+    useState<RunResponse>(blankRunResponse);
+  const [gameId, setGameId] = useState("");
 
+  //WebSocket management
   useEffect(() => {
     const ws = new WebSocket(connectionLocation);
-    
+
     ws.onopen = () => {
       console.log("Connected to WebSocket");
       setIsConnected(true);
@@ -40,10 +59,16 @@ export const useWebSocket = (connectionLocation: string) => {
             console.log("RESULT", data.data);
             setServerRunResponse(data.data);
             break;
-		  case "info":
-			console.log("INFO", data.data.information)
-			//display info to user
-			break;
+          case "success":
+            setGameRunning(true);
+            break;
+          case "not enough players":
+            break;
+          case "game full":
+            break;
+          case "created game":
+            setGameId(data.data.id);
+            break;
         }
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -62,17 +87,29 @@ export const useWebSocket = (connectionLocation: string) => {
     return () => {
       ws.close();
     };
-  }, [connectionLocation]);
+  }, [connectionLocation, setGameRunning]);
 
-  const submitCode = () => {
+  const requestNewGame = () => {
     if (socket) {
-      socket.send(JSON.stringify({ type: "usercode", code: userCode }));
+      socket.send(JSON.stringify({ type: "create" }));
     }
   };
 
-  const sendMessage = (message: "string") => {
+  //Joining a game
+  useEffect(() => {
+    if (socket && gameId != "") {
+      socket.send(JSON.stringify({ type: "join", data: { gameId: gameId } }));
+    }
+  }, [socket, gameId]);
+
+  //Leaving a game
+  //setGameRunning
+
+  const submitCode = () => {
     if (socket) {
-      socket.send(JSON.stringify(message));
+      socket.send(
+        JSON.stringify({ type: "usercode", data: { code: userCode } })
+      );
     }
   };
 
@@ -82,12 +119,14 @@ export const useWebSocket = (connectionLocation: string) => {
     problem,
     userCode,
     serverRunResponse,
-    
+    gameId,
+
     // Methods
     submitCode,
-    sendMessage,
     setUserCode,
     setProblem,
     setServerRunResponse,
+    setGameId,
+    requestNewGame,
   };
 };

@@ -5,25 +5,17 @@ import StartPage from "./StartPage";
 import { useWebSocket } from "./WebSocket";
 
 function App() {
-  const [gameId, setGameId] = useState("");
-  
+  const [gameRunning, setGameRunning] = useState(false);
   // WebSocket management at the app level
-  const address = "wss://0813d49b2d9b.ngrok-free.app/ws";
-  const webSocketProps = useWebSocket(address);
-  
+  const address = "wss://609c23f26da3.ngrok-free.app/2player";
+  const webSocketProps = useWebSocket(address, setGameRunning);
+
   return (
     <div>
-      {gameId ? (
-        <GamePage 
-          gameId={gameId} 
-          setGameId={setGameId} 
-          webSocket={webSocketProps}
-        />
+      {gameRunning ? (
+        <GamePage setGameRunning={setGameRunning} webSocketProps={webSocketProps} />
       ) : (
-        <StartPage 
-          setGameId={setGameId} 
-          webSocket={webSocketProps}
-        />
+        <StartPage webSocketProps={webSocketProps} />
       )}
     </div>
   );
