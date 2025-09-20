@@ -11,29 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerializationException
 import kotlin.time.Duration.Companion.seconds
 import java.util.UUID
-
-@Serializable
-data class WebSocketMessage<T>(val type: String, val data: T)
-
-@Serializable
-data class InfoMessage(val message: String)
-
-@Serializable
-data class ProblemMessage(val description: String, val starterCode: String)
-
-@Serializable
-data class ResultMessage(val success: Boolean, val message: String = "")
-
-@Serializable
-data class CodeSubmission(val type: String, val code: String)
-
-data class Player(val uuid: String, val websocket: WebSocketServerSession)
-
-data class Game(val players: MutableList<Player>)
-
-fun playGame(game: Game) {
-	TODO()
-}
+import dev.fischerabruzese.*
 
 val game = Game(mutableListOf())
 
@@ -48,6 +26,30 @@ fun Application.configureSockets() {
     val app = App()
     
     routing {
+		webSocket("/2player") { 
+			val playerID = UUID.randomUUID().toString()
+			val player = Player(playerID, this)
+
+			if(game.players.size >= 2) {
+				for (p in game.players) {
+					if (!p.websocket.isActive) {
+						p.websocket.close(CloseReason(1000, "inactivity"))
+						game.players.remove(p)
+					}
+				}
+			}
+			if(game.players.size >= 2) {
+				val message = WebSocketMessage("info", InfoMessage("Too many players... Try again later"))
+			}
+			if(game.players.size < 2) {
+				val message = WebSocketMessage("info", InfoMessage("Waiting for players..."))
+				outgoing.send(Frame.Text(Json.encodeToString(message)))
+			}
+			if(game.players.size == 2) {
+				playGame(game)
+			}
+		}
+
         webSocket("/ws") {
             // Send problem description on connection
             val problemMessage = ProblemMessage(App.testProblem.description, App.testProblem.starterCode)
@@ -84,32 +86,5 @@ fun Application.configureSockets() {
                 }
             }
         }
-
-
-		webSocket("/2player") { 
-			val playerID = UUID.randomUUID().toString()
-			val player = Player(playerID, this)
-
-			game.players.add(player)
-
-			if(game.players.size >= 2) {
-				for (p in game.players) {
-					if (!p.websocket.isActive) {
-						p.websocket.close(CloseReason(1000, "inactivity"))
-						game.players.remove(p)
-					}
-				}
-			}
-			if(game.players.size >= 2) {
-				val message = WebSocketMessage("info", InfoMessage("Too many players... Try again later"))
-			}
-			if(game.players.size < 2) {
-				val message = WebSocketMessage("info", InfoMessage("Waiting for players..."))
-				outgoing.send(Frame.Text(Json.encodeToString(message)))
-			}
-			if(game.players.size == 2) {
-				playGame(game)
-			}
-		}
     }
 }
