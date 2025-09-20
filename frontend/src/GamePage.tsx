@@ -114,52 +114,31 @@ const GamePage: React.FC = () => {
     [middleHeight]
   );
 
-  //   const runCode = async () => {
-  //     setIsRunning(true);
-  //     setResult('Running...');
-
-  //     // Simulate code execution
-  //     setTimeout(() => {
-  //       setResult(`Output:
-  // [1, 2]
-
-  // Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].
-
-  // Runtime: 68 ms, faster than 91.2% of JavaScript online submissions
-  // Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
-  //       setIsRunning(false);
-  //     }, 1500);
-  //   };
-
   const bottomHeight = 100 - topHeight - middleHeight;
 
   return (
     <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+      <header className="bg-white border-b border-gray-200 px-6 py-2 flex items-center justify-between shadow-sm flex-shrink-0">
         <div className="flex items-center space-x-4">
-          <Menu className="w-5 h-5 text-gray-600" />
-          <h1 className="text-xl font-semibold text-gray-800">CodeFight</h1>
-
-          {/* Connection Status Indicator */}
-          <div className="flex items-center space-x-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
-              }`}
-            ></div>
-            <span
-              className={`text-xs font-medium ${
-                isConnected ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {isConnected ? "Connected" : "Disconnected"}
-            </span>
-          </div>
+          {/* <Menu className="w-5 h-5 text-gray-600" /> */}
+          <h1 className="text-m font-semibold text-gray-800">Assembrawly</h1>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-600">Problem Name</span>
+        {/* Connection Status Indicator - moved to right */}
+        <div className="flex items-center space-x-2">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
+            }`}
+          ></div>
+          <span
+            className={`text-xs font-medium ${
+              isConnected ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {isConnected ? "Connected" : "Disconnected"}
+          </span>
         </div>
       </header>
 
@@ -243,7 +222,9 @@ const GamePage: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-gray-50 min-h-0">
               <pre className="text-xs font-mono text-gray-800 whitespace-pre-wrap">
-                {serverRunResponse.success ? "SUCCESS" : serverRunResponse.message}
+                {serverRunResponse.success
+                  ? "SUCCESS"
+                  : serverRunResponse.message}
               </pre>
             </div>
           </div>
