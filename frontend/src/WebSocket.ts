@@ -10,6 +10,10 @@ export interface RunResponse {
   success: boolean;
 }
 
+export interface Information {
+	message: string;
+}
+
 const blankProblem: Problem = {
   description: "",
   starterCode: "",
@@ -49,6 +53,10 @@ export const useWebSocket = (connectionLocation: string) => {
             console.log("RESULT", data.data);
             setServerRunResponse(data.data);
             break;
+		  case "info":
+			console.log("INFO", data.data.information)
+			//display info to user
+			break;
         }
       } catch (error) {
         console.error("Error parsing JSON:", error);
