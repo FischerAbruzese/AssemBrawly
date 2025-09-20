@@ -15,6 +15,7 @@ import kotlinx.serialization.SerializationException
 import kotlin.time.Duration.Companion.seconds
 import java.util.UUID
 import dev.fischerabruzese.*
+import dev.fischerabruzese.RecievedMessageType.*
 import kotlinx.serialization.json.jsonPrimitive
 
 val lobby = GameManager()
@@ -23,27 +24,60 @@ val lobby = GameManager()
 suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): JoinOptions? {
     return withTimeoutOrNull(timeoutMs) {
         for (frame in incoming) {
-            when (frame) {
-                is Frame.Text -> {
-                    try {
-						println("---Recieved---\n${frame.readText()}\n---")
-                        val message = Json.decodeFromString<JsonObject>(frame.readText())
-						if(message["type"]?.jsonPrimitive?.content == "join") {
-							val joinObject = Json.decodeFromJsonElement<WebSocketMessage<Join>>(message)
-							return@withTimeoutOrNull JoinOptions(joinObject.type, joinObject.data.gameId)
-						}
-						if(message["type"]?.jsonPrimitive?.content == "create") {
-							return@withTimeoutOrNull JoinOptions("create", null)
-						}
-                    } catch (e: Exception) {
-						println("---Parse Error---\n${e.message}\n---")
-					}
-                }
-                else -> {}
+			when(frame.messageType()) {
+                JOIN -> {
+					val joinInfo = jsonParse<Join>((frame as Frame.Text).readText())
+					return@withTimeoutOrNull JoinOptions("join", joinInfo.gameId)
+				}
+                CREATE -> {
+					return@withTimeoutOrNull JoinOptions("create", null)
+				}
+				RECIEVED_CODE,
+                CODE_SUBMISSION -> { 
+					outgoing.send(createMessage("info", InfoMessage("You must send a join message first!"))) 
+				}
+				UNSUPPORTED -> {
+					outgoing.send(createMessage("info", InfoMessage("You must send a join message first! (btw I don't recognize this message type)"))) 
+				}
+                CLOSE -> { throw IllegalStateException("Unreachable code") }
             }
         }
         null
     }
+}
+
+suspend fun DefaultWebSocketServerSession.executeJoinAction(joinMessage: JoinOptions, player: Player) {
+	when (joinMessage.action) {
+		"join" -> {
+			when (lobby.addPlayerToGame(joinMessage.gameId, player)) {
+				GameManager.ConnectToGame.SUCCESS -> {
+					lobby.getGame(joinMessage.gameId!!)!!.play()
+				}
+				GameManager.ConnectToGame.NOT_ENOUGH_PLAYERS -> {
+					outgoing.send(createMessage("not enough players", Unit))
+				}
+				GameManager.ConnectToGame.GAME_FULL -> {
+					outgoing.send(createMessage("game full", Unit))
+				}
+			}
+		}
+		"create" -> {
+			when (val game = lobby.addPlayerToGame(null, player)) {
+				GameManager.ConnectToGame.SUCCESS -> {
+					println("something really went wrong")
+				}
+				GameManager.ConnectToGame.NOT_ENOUGH_PLAYERS -> {
+					val message = CreatedGame(player.game?.id ?: "something went wrong")
+					outgoing.send(createMessage<CreatedGame>("created game", message))
+				}
+				GameManager.ConnectToGame.GAME_FULL -> {
+					println("something really went wrong")
+				}
+			}
+
+		}
+		else -> {}
+	}
 }
 
 fun Application.configureSockets() {
@@ -58,94 +92,23 @@ fun Application.configureSockets() {
     
     routing {
 		webSocket("/2player") { 
-			println("---\nNew Player Conected")
-
 			val playerID = UUID.randomUUID().toString()
-			val player = Player(playerID, this)
+			println("---New Player Conected {$playerID}---")
+			val player = Player(playerID, this, null)
 
 
 			val joinMessage = waitForJoinMessage(600000) 
-			println("---Decoded Join Message---\n${joinMessage}\n---")
+			println("---Recieved Join Message from ${playerID}---")
 			if (joinMessage == null) {
 				this.close(CloseReason(1000, "timeout"))	
 			}
-
-			when (joinMessage?.action) {
-				"join" -> {
-					when (lobby.addPlayerToGame(joinMessage.gameId, player)) {
-						GameManager.ConnectToGame.SUCCESS -> {
-							outgoing.send(createMessage("success", Unit))
-							lobby.getGame(joinMessage.gameId!!)!!.play()
-						}
-						GameManager.ConnectToGame.NOT_ENOUGH_PLAYERS -> {
-							outgoing.send(createMessage("not enough players", Unit))
-						}
-						GameManager.ConnectToGame.GAME_FULL -> {
-							outgoing.send(createMessage("game full", Unit))
-						}
-					}
-				}
-				"create" -> {
-                    when (val game = lobby.addPlayerToGame(null, player)) {
-						GameManager.ConnectToGame.SUCCESS -> {
-							println("something really went wrong")
-						}
-						GameManager.ConnectToGame.NOT_ENOUGH_PLAYERS -> {
-							val message = CreatedGame(lobby.playerGame(player)?.id ?: "something went wrong")
-							outgoing.send(createMessage<CreatedGame>("created game", message))
-						}
-						GameManager.ConnectToGame.GAME_FULL -> {
-							println("something really went wrong")
-						}
-					}
-
-				}
-				else -> {}
+			else {
+				executeJoinAction(joinMessage, player)
 			}
 
-			for (frame in incoming) {
-				when(frame) {
-					is Frame.Close -> {}
-					else -> {}
-				}
-			}
+			player.passWebsocketControl()
+
+			lobby.playerLeft(player)
 		}
-
-        webSocket("/ws") {
-            // Send problem description on connection
-            val problemMessage = ProblemMessage(App.testProblem.description, App.testProblem.starterCode)
-            val wrappedProblem = WebSocketMessage("problem", problemMessage)
-            outgoing.send(Frame.Text(Json.encodeToString(wrappedProblem)))
-
-			println("---Sent---\n${Json.encodeToString(wrappedProblem)}\n---")
-            
-            for (frame in incoming) {
-                if (frame is Frame.Text) {
-                    val receivedText = frame.readText()
-					println("---Recieved---\n${receivedText}\n---")
-                    
-                    try {
-                        // Try to parse as JSON first
-                        val codeSubmission = Json.decodeFromString<CodeSubmission>(receivedText)
-                        val pythonCode = codeSubmission.code
-                        
-                        // Execute the code
-                        val result = App.runSandboxedPython(pythonCode)
-                        val success = result.trim() == App.testProblem.solution
-                        val resultMessage = ResultMessage(success)
-                        val wrappedResult = WebSocketMessage("result", resultMessage)
-                        outgoing.send(Frame.Text(Json.encodeToString(wrappedResult)))
-
-						println("---Sent---\n${Json.encodeToString(wrappedResult)}\n---")
-                    } catch (e: Exception) {
-                        val errorMessage = ResultMessage(false, "Execution error: ${e.message}")
-                        val wrappedError = WebSocketMessage("result", errorMessage)
-                        outgoing.send(Frame.Text(Json.encodeToString(wrappedError)))
-
-						println("---Sent---\n${Json.encodeToString(wrappedError)}\n---")
-                    }
-                }
-            }
-        }
-    }
+	}
 }

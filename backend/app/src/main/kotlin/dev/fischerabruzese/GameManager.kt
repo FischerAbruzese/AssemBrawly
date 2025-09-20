@@ -2,7 +2,6 @@ package dev.fischerabruzese
 
 class GameManager {
     private val games: HashMap<String, Game> = hashMapOf()
-    private val gamesByPlayer: HashMap<String, Game> = hashMapOf()
 
     fun getGame(id: String) = games[id]
 
@@ -21,15 +20,26 @@ class GameManager {
             return ConnectToGame.GAME_FULL
         }
         game.players.add(player)
-        gamesByPlayer[player.uuid] = game
+        player.game = game
         return if (game.players.size == 2) ConnectToGame.SUCCESS else ConnectToGame.NOT_ENOUGH_PLAYERS
     }
 
-    fun playerGame(player: Player): Game? = gamesByPlayer[player.uuid]
-
-    fun newGame(): Game {
+    private fun newGame(): Game {
         val game = Game(games.size.toString(), mutableListOf())
         games[game.id] = game
         return game
+    }
+
+    fun playerLeft(player: Player) {
+        val game = player.game
+
+        if (game?.players?.remove(player) != true) {
+            throw Exception("Expected player to be removed/game to exist")
+        }
+
+        if (game.players.isEmpty()) {
+            println("---PURGING GAME ${game.id}---")
+            games.remove(game.id)
+        }
     }
 }

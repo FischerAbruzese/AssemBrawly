@@ -6,3 +6,4 @@ backend/build
 
 frontend/node_modules
 backend/.kotlin/sessions/kotlin-compiler-10009440395802424434.salive
+backend/.kotlin/sessions
