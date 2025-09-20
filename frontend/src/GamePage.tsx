@@ -97,9 +97,9 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
   const bottomHeight = 100 - topHeight - middleHeight;
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col">
+    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
         <div className="flex items-center space-x-4">
           <Menu className="w-5 h-5 text-gray-600" />
           <h1 className="text-xl font-semibold text-gray-800">CodeChallenge</h1>
@@ -110,22 +110,22 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Panel */}
         <div 
-          className="flex flex-col bg-white border-r border-gray-200"
+          className="flex flex-col bg-white border-r border-gray-200 min-h-0"
           style={{ width: `${leftWidth}%` }}
           data-left-panel
         >
           {/* Problem Description */}
           <div 
-            className="flex flex-col overflow-hidden"
+            className="flex flex-col overflow-hidden min-h-0"
             style={{ height: `${topHeight}%` }}
           >
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-sm font-medium text-gray-700">Problem</h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 text-sm">
+            <div className="flex-1 overflow-y-auto p-4 text-sm min-h-0">
               <h2 className="text-lg font-semibold mb-3">1. Two Sum</h2>
               <p className="mb-4 text-gray-700">
                 Given an array of integers <code className="bg-gray-100 px-1 rounded">nums</code> and an integer <code className="bg-gray-100 px-1 rounded">target</code>, 
@@ -165,14 +165,14 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
             </div>
           </div>
 
-          <ResizeHandle onResize={handleTopResize} direction="vertical" />
+          <ResizeHandle onResize={handleTopResize} direction="vertical" className="flex-shrink-0" />
 
           {/* Code Editor */}
           <div 
-            className="flex flex-col overflow-hidden"
+            className="flex flex-col overflow-hidden min-h-0"
             style={{ height: `${middleHeight}%` }}
           >
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-sm font-medium text-gray-700">Code</h3>
               <select className="text-xs bg-white border border-gray-300 rounded px-2 py-1">
                 <option>JavaScript</option>
@@ -181,11 +181,11 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
                 <option>C++</option>
               </select>
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden min-h-0">
               <textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full h-full p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none outline-none"
+                className="w-full h-full p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none outline-none border-0"
                 style={{ 
                   fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
                   lineHeight: '1.5'
@@ -195,14 +195,14 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
             </div>
           </div>
 
-          <ResizeHandle onResize={handleMiddleResize} direction="vertical" />
+          <ResizeHandle onResize={handleMiddleResize} direction="vertical" className="flex-shrink-0" />
 
           {/* Results Panel */}
           <div 
-            className="flex flex-col overflow-hidden"
+            className="flex flex-col overflow-hidden min-h-0"
             style={{ height: `${bottomHeight}%` }}
           >
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-sm font-medium text-gray-700">Console</h3>
               <button
                 onClick={runCode}
@@ -213,7 +213,7 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
                 <span>{isRunning ? 'Running...' : 'Run Code'}</span>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 min-h-0">
               <pre className="text-xs font-mono text-gray-800 whitespace-pre-wrap">
                 {result || 'Click "Run Code" to see the output here...'}
               </pre>
@@ -221,17 +221,17 @@ Memory Usage: 39.1 MB, less than 76.8% of JavaScript online submissions`);
           </div>
         </div>
 
-        <ResizeHandle onResize={handleHorizontalResize} direction="horizontal" />
+        <ResizeHandle onResize={handleHorizontalResize} direction="horizontal" className="flex-shrink-0" />
 
         {/* Right Panel - Multiplayer/Activity Feed */}
         <div 
-          className="flex flex-col bg-white overflow-hidden"
+          className="flex flex-col bg-white overflow-hidden min-h-0"
           style={{ width: `${100 - leftWidth}%` }}
         >
-          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex-shrink-0">
             <h3 className="text-sm font-medium text-gray-700">Live Activity</h3>
           </div>
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
             <div className="space-y-4">
               <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
