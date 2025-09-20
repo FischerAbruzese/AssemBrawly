@@ -1,18 +1,5 @@
 import { useState, useEffect } from "react";
-
-export interface Problem {
-  description: string;
-  starterCode: string;
-}
-
-export interface RunResponse {
-  message: string;
-  success: boolean;
-}
-
-export interface Information {
-	message: string;
-}
+import type { Problem, RunResponse } from "./WebSocketInterfaces.ts";
 
 const blankProblem: Problem = {
   description: "",
