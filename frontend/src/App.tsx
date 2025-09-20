@@ -8,7 +8,7 @@ import StartPage from "./StartPage";
 function App() {
   return (
     <div>
-      <StartPage />
+      <GamePage />
     </div>
   );
 }
