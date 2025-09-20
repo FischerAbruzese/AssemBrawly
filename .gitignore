@@ -3,3 +3,5 @@ backend/.gradle
 
 # Ignore Gradle build output directory
 backend/build
+
+frontend/node_modules
