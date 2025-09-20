@@ -1,31 +1,70 @@
 package dev.fischerabruzese
 
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.http.content.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import java.time.Duration
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.SerializationException
 import kotlin.time.Duration.Companion.seconds
+
+@Serializable
+data class WebSocketMessage<T>(val type: String, val data: T)
+
+@Serializable
+data class ProblemMessage(val description: String, val starterCode: String)
+
+@Serializable
+data class ResultMessage(val success: Boolean, val message: String = "")
+
+@Serializable
+data class CodeSubmission(val type: String, val code: String)
 
 fun Application.configureSockets() {
     install(WebSockets) {
-        pingPeriod = 15.seconds
-        timeout = 15.seconds
+        pingPeriod = 60.seconds
+        timeout = 60.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
+    
+    val app = App()
+    
     routing {
-        webSocket("/ws") { // websocketSession
+        webSocket("/ws") {
+            // Send problem description on connection
+            val problemMessage = ProblemMessage(App.testProblem.description, App.testProblem.starterCode)
+            val wrappedProblem = WebSocketMessage("problem", problemMessage)
+            outgoing.send(Frame.Text(Json.encodeToString(wrappedProblem)))
+
+			println("---Sent---\n${Json.encodeToString(wrappedProblem)}\n---")
+            
             for (frame in incoming) {
                 if (frame is Frame.Text) {
-                    val text = frame.readText()
-                    outgoing.send(Frame.Text("YOU SAID: $text"))
-                    if (text.equals("bye", ignoreCase = true)) {
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+                    val receivedText = frame.readText()
+					println("---Recieved---\n${receivedText}\n---")
+                    
+                    try {
+                        // Try to parse as JSON first
+                        val codeSubmission = Json.decodeFromString<CodeSubmission>(receivedText)
+                        val pythonCode = codeSubmission.code
+                        
+                        // Execute the code
+                        val result = app.runSandboxedPython(pythonCode)
+                        val success = result.trim() == App.testProblem.solution
+                        val resultMessage = ResultMessage(success)
+                        val wrappedResult = WebSocketMessage("result", resultMessage)
+                        outgoing.send(Frame.Text(Json.encodeToString(wrappedResult)))
+
+						println("---Sent---\n${Json.encodeToString(wrappedResult)}\n---")
+                    } catch (e: Exception) {
+                        val errorMessage = ResultMessage(false, "Execution error: ${e.message}")
+                        val wrappedError = WebSocketMessage("result", errorMessage)
+                        outgoing.send(Frame.Text(Json.encodeToString(wrappedError)))
+
+						println("---Sent---\n${Json.encodeToString(wrappedError)}\n---")
                     }
                 }
             }
