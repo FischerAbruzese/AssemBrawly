@@ -4,14 +4,19 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerializationException
 import kotlin.time.Duration.Companion.seconds
+import java.util.UUID
 
 @Serializable
 data class WebSocketMessage<T>(val type: String, val data: T)
+
+@Serializable
+data class InfoMessage(val message: String)
 
 @Serializable
 data class ProblemMessage(val description: String, val starterCode: String)
@@ -21,6 +26,16 @@ data class ResultMessage(val success: Boolean, val message: String = "")
 
 @Serializable
 data class CodeSubmission(val type: String, val code: String)
+
+data class Player(val uuid: String, val websocket: WebSocketServerSession)
+
+data class Game(val players: MutableList<Player>)
+
+fun playGame(game: Game) {
+	TODO()
+}
+
+val game = Game(mutableListOf())
 
 fun Application.configureSockets() {
     install(WebSockets) {
@@ -69,5 +84,32 @@ fun Application.configureSockets() {
                 }
             }
         }
+
+
+		webSocket("/2player") { 
+			val playerID = UUID.randomUUID().toString()
+			val player = Player(playerID, this)
+
+			game.players.add(player)
+
+			if(game.players.size >= 2) {
+				for (p in game.players) {
+					if (!p.websocket.isActive) {
+						p.websocket.close(CloseReason(1000, "inactivity"))
+						game.players.remove(p)
+					}
+				}
+			}
+			if(game.players.size >= 2) {
+				val message = WebSocketMessage("info", InfoMessage("Too many players... Try again later"))
+			}
+			if(game.players.size < 2) {
+				val message = WebSocketMessage("info", InfoMessage("Waiting for players..."))
+				outgoing.send(Frame.Text(Json.encodeToString(message)))
+			}
+			if(game.players.size == 2) {
+				playGame(game)
+			}
+		}
     }
 }
