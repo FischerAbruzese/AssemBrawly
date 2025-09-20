@@ -1,6 +1,22 @@
 import React, { useState, useCallback } from "react";
 import { Play, Menu } from "lucide-react";
 import { useWebSocket } from "./WebSocket";
+import type { Problem, RunResponse } from "./WebSocketInterfaces";
+
+interface WebSocketProps {
+  isConnected: boolean;
+  problem: Problem;
+  userCode: string;
+  serverRunResponse: RunResponse;
+  submitCode: () => void;
+  setUserCode: (code: string) => void;
+}
+
+interface GamePageProps {
+  gameId: string;
+  setGameId: (gameId: string) => void;
+  webSocket: WebSocketProps;
+}
 
 interface ResizeHandleProps {
   onResize: (delta: number) => void;
@@ -52,10 +68,8 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({
   );
 };
 
-const GamePage: React.FC = () => {
-  const address = "wss://0813d49b2d9b.ngrok-free.app/ws";
-
-  // WebSocket
+const GamePage: React.FC<GamePageProps> = ({ gameId, setGameId, webSocket }) => {
+  // Destructure WebSocket props
   const {
     isConnected,
     problem,
@@ -63,7 +77,7 @@ const GamePage: React.FC = () => {
     serverRunResponse,
     submitCode,
     setUserCode,
-  } = useWebSocket(address);
+  } = webSocket;
 
   // Layout state
   const [leftPanelWidth, setLeftPanelWidth] = useState(30); // percentage
@@ -157,14 +171,25 @@ const GamePage: React.FC = () => {
   const centerCheatsheetHeight = 100 - centerProblemHeight;
   const rightConsoleHeight = 100 - rightCodeHeight;
 
+  const handleBackToStart = () => {
+    setGameId("");
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
         <div className="flex items-center space-x-4">
-          <Menu className="w-5 h-5 text-gray-300" />
-          <h1 className="text-xl font-semibold text-gray-100">Assembrawly</h1>
-        </div>
+                  <button
+                    onClick={handleBackToStart}
+                    className="text-gray-300 hover:text-white transition-colors duration-150"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </button>
+                  <h1 className="text-xl font-semibold text-gray-100">
+                    Assembrawly {gameId && `- Game: ${gameId}`}
+                  </h1>
+                </div>
 
         {/* Connection Status Indicator */}
         <div className="flex items-center space-x-2">
