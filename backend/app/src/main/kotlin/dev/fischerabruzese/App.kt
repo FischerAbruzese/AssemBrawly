@@ -33,13 +33,22 @@ class App {
         return output.trimEnd('\r', '\n')
     }
 
-	fun main(args: Array<String>) {
-		io.ktor.server.netty.EngineMain.main(args)
-	}
+    companion object {
+        val testProblem = PythonProblem(
+            description = "Return the sum of the first 101 fib numbers. The first 3 fib numbers are 0 1 1.",
+            starterCode = "def solution():\n\treturn 0",
+            solution = "500",
+        )
+    }
 }
 
 fun Application.module() {
     configureSockets()
     configureSerialization()
     configureRouting()
+}
+
+
+fun main(args: Array<String>) {
+	io.ktor.server.netty.EngineMain.main(args)
 }
