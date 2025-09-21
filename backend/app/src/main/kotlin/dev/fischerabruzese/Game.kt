@@ -7,6 +7,7 @@ import io.ktor.server.websocket.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.internal.readJson
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 
@@ -21,6 +22,9 @@ class Player(
 		delay(50)
 		websocket.outgoing.send(
 			createMessage("problem", ProblemMessage(App.testProblem.description, App.testProblem.starterCode)),
+		)
+		websocket.outgoing.send(
+			createMessage("opponentCode", OpponentCode(App.testProblem.starterCode)),
 		)
 
 		coroutineScope {
@@ -58,8 +62,8 @@ class Player(
 						throw Exception("In game loop, but player doesn't know their game")
 					}
 					val opponents = game?.players?.filter { it != this }
-					val message = (frame as Frame.Text).readText()
-					game?.send(opponents!!, createMessage("opponentCode", OpponentCode(message)))
+					val code = jsonParse<RecievedCode>((frame as Frame.Text).readText())
+					game?.send(opponents!!, createMessage("opponentCode", OpponentCode(code.code)))
 				}
                 CODE_SUBMISSION -> {
 					val codeObj = jsonParse<CodeSubmission>((frame as Frame.Text).readText())
