@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Problem, RunResponse } from "./WebSocketInterfaces.ts";
+import type { Opponent } from "./App.tsx";
 
 const blankProblem: Problem = {
   description: "",
@@ -32,9 +33,9 @@ export interface WebSocketProps {
 }
 export const useWebSocket = (
   connectionLocation: string,
+  playerName: string,
   setGameRunning : (gameRunning: boolean) => void,
-  setOpponentCode : (opponentCode: string) => void,
-  setOpponentConsole : (opponentConsole: string) => void,
+ opponent: Opponent
 ) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -43,6 +44,13 @@ export const useWebSocket = (
   const [serverRunResponse, setServerRunResponse] =
     useState<RunResponse>(blankRunResponse);
   const [gameId, setGameId] = useState("");
+  const {
+    setOpponentCode,
+    setOpponentConsole,
+    setOpponentHealth,
+    setOpponentLanguage,
+    setOpponentName,
+  } = opponent;
 
   //WebSocket management
   useEffect(() => {
@@ -76,19 +84,22 @@ export const useWebSocket = (
             break;
           case "created game":
             setGameId(data.data.id);
-            navigator.clipboard.writeText(gameId).then(function() {
-              console.log('Copied the game id: ' + gameId);
+            navigator.clipboard.writeText(data.data.id).then(function() {
+              console.log('Copied the game id: ' + data.data.id);
             }).catch(function(err) {
               console.error('Error in copying text: ', err);
             });
             break;
           case "opponentCode":
-            console.log("OPPOWNENT CODE", data.data.code);
             setOpponentCode(data.data.code);
             break;
           case "opponentConsole":
-            console.log("OPPOWNENT CONSOLE", data.data.console);
             setOpponentConsole(data.data.console);
+            break;
+          case "oppInfo":
+            setOpponentName(data.data.name);
+            setOpponentLanguage(data.data.language);
+            setOpponentHealth(data.data.health);
             break;
         }
       } catch (error) {
@@ -108,20 +119,20 @@ export const useWebSocket = (
     return () => {
       ws.close();
     };
-  }, [connectionLocation, setGameRunning, setOpponentCode, setOpponentConsole]);
+  }, [connectionLocation, gameId, setGameRunning, setOpponentCode, setOpponentConsole]);
 
   const requestNewGame = () => {
     if (socket) {
-      socket.send(JSON.stringify({ type: "create" }));
+      socket.send(JSON.stringify({ type: "create", data:{name:playerName} }));
     }
   };
 
   //Joining a game
   useEffect(() => {
     if (socket && gameId != "") {
-      socket.send(JSON.stringify({ type: "join", data: { gameId: gameId } }));
+      socket.send(JSON.stringify({ type: "join", data: {name:playerName, gameId: gameId } }));
     }
-  }, [socket, gameId]);
+  }, [socket, gameId, playerName]);
 
   //Leaving a game
   //setGameRunning

@@ -1,16 +1,16 @@
 import React, { useState, useCallback } from "react";
 import { Play, Menu } from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
-import {runningRunResponse} from "./WebSocket";
+import { runningRunResponse } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 import X86CheatSheet from "./X86CheatSheet";
+import type { Opponent } from "./App";
 
 interface GamePageProps {
   setGameRunning: (gameRunning: boolean) => void;
   webSocketProps: WebSocketProps;
   playerName: string;
-  opponentCode: string;
-  opponentConsole: string;
+  opponent: Opponent;
 }
 
 interface ResizeHandleProps {
@@ -67,8 +67,7 @@ const GamePage: React.FC<GamePageProps> = ({
   setGameRunning,
   webSocketProps,
   playerName,
-  opponentCode,
-  opponentConsole,
+  opponent,
 }) => {
   const {
     isConnected,
@@ -80,6 +79,14 @@ const GamePage: React.FC<GamePageProps> = ({
     setUserCode,
     syncUserCode,
   } = webSocketProps;
+
+  const {
+    opponentCode,
+    opponentConsole,
+    opponentHealth,
+    opponentLanguage,
+    opponentName,
+  } = opponent;
 
   // Create a wrapper function that calls both setUserCode and syncUserCode
   const handleUserCodeChange = useCallback(
@@ -216,9 +223,11 @@ const GamePage: React.FC<GamePageProps> = ({
             style={{ height: `${leftCodeHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">{playerName + "'s Code"}</h3>
+              <h3 className="text-sm font-medium text-gray-200">
+                {playerName + "'s Code"}
+              </h3>
               <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200">
-                <option>Python</option>
+                <option>RISC-V</option>
               </select>
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
@@ -254,11 +263,11 @@ const GamePage: React.FC<GamePageProps> = ({
                 onClick={() => {
                   submitCode();
                 }}
-                disabled={isRunning ()}
+                disabled={isRunning()}
                 className="flex items-center space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded transition-colors duration-150"
               >
                 <Play className="w-3 h-3" />
-                <span>{isRunning ()? "Running..." : "Run Code"}</span>
+                <span>{isRunning() ? "Running..." : "Run Code"}</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-gray-800 min-h-0">
@@ -308,7 +317,9 @@ const GamePage: React.FC<GamePageProps> = ({
             style={{ height: `${centerCheatsheetHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">x86 Assembly Cheatsheet</h3>
+              <h3 className="text-sm font-medium text-gray-200">
+                x86 Assembly Cheatsheet
+              </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4 min-h-0 bg-gray-800">
               <X86CheatSheet />
@@ -334,11 +345,9 @@ const GamePage: React.FC<GamePageProps> = ({
             style={{ height: `${rightCodeHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">
-                Opp code
-              </h3>
-              <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200">
-                <option>Python</option>
+              <h3 className="text-sm font-medium text-gray-200">{opponentName + "'s Code"}</h3>
+              <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200" disabled>
+                <option>{opponentLanguage}</option>
               </select>
             </div>
             <div className="flex-1 overflow-hidden min-h-0">

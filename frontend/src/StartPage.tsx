@@ -8,7 +8,6 @@ import {
   Zap,
   X,
   Sparkles,
-  SparklesIcon,
 } from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
@@ -290,7 +289,7 @@ const StartPage: React.FC<StartPageProps> = ({
                 id="playerName"
                 type="text"
                 placeholder="Enter your name"
-                value={playerName.toUpperCase()}
+                value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400 text-center"
               />
