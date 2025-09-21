@@ -2,7 +2,6 @@ import React, { useState, useCallback } from "react";
 import { Play, Menu } from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
 import {runningRunResponse} from "./WebSocket";
-import type { Problem, RunResponse } from "./WebSocketInterfaces";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 import X86CheatSheet from "./X86CheatSheet";
 
@@ -100,9 +99,6 @@ const GamePage: React.FC<GamePageProps> = ({
 
   // Running state
   const isRunning = () => serverRunResponse === runningRunResponse;
-
-  // Right panel code state (separate from left)
-  const [rightUserCode, setRightUserCode] = useState("");
 
   // Resize handlers
   const handleLeftCenterResize = useCallback(

@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { Play, Users, BookOpen, Code, Trophy, Zap, X } from "lucide-react";
-import type { Problem, RunResponse } from "./WebSocketInterfaces";
 import type { WebSocketProps } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 
 interface StartPageProps {
-    webSocketProps: WebSocketProps;
-    playerName: string;
-    setPlayerName: (playerName: string) => void;
+  webSocketProps: WebSocketProps;
+  playerName: string;
+  setPlayerName: (playerName: string) => void;
 }
 
-const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPlayerName}) => {
-  const [gameCode, setGameCode] = useState("");
+const StartPage: React.FC<StartPageProps> = ({
+  webSocketProps,
+  playerName,
+  setPlayerName,
+}) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
 
-  const { isConnected, setGameId, requestNewGame } = webSocketProps;
+  const { isConnected, gameId, setGameId, requestNewGame } = webSocketProps;
 
   // Auto-hide toast after 5 seconds
   useEffect(() => {
@@ -49,11 +51,11 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
   };
 
   const handleJoinGame = () => {
-    if (gameCode.trim() && playerName.trim()) {
-      setGameId(gameCode.trim());
-      console.log(`Joining game ${gameCode} as ${playerName}`);
+    if (gameId.trim() && playerName.trim()) {
+      setGameId(gameId.trim());
+      console.log(`Joining game ${gameId} as ${playerName}`);
       showToastMessage(
-        `Attempting to join game ${gameCode} as ${playerName} ...`
+        `Attempting to join game ${gameId} as ${playerName} ...`
       );
     }
   };
@@ -69,7 +71,7 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
   const getJoinGameTooltip = () => {
     if (!isConnected) return "Connect to server to join a game";
     if (!playerName.trim()) return "Enter your name to join a game";
-    if (!gameCode.trim()) return "Enter a game code to join";
+    if (!gameId.trim()) return "Enter a game code to join";
     return null;
   };
 
@@ -105,6 +107,14 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
       <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+          <div className="flex items-center justify-center">
+            <img
+              src="/x86.svg"
+              alt="X86 Assembly Language"
+              className="w-12 h-12 cursor-pointer"
+              onClick={() => setShowTutorial(false)}
+            />
+          </div>
           <h1 className="text-xl font-semibold text-gray-100">
             Assembrawly Tutorial
           </h1>
@@ -197,6 +207,14 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+        <div className="flex items-center justify-center">
+            <img
+              src="/x86.svg"
+              alt="X86 Assembly Language"
+              className="w-12 h-12 cursor-pointer"
+              onClick={() => setShowTutorial(false)}
+            />
+          </div>
         <h1 className="text-2xl font-bold text-gray-100">Assembrawly</h1>
         <ConnectionStatusIndicator isConnected={isConnected} />
       </header>
@@ -206,14 +224,13 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
         <div className="max-w-4xl mx-auto px-6 py-12">
           {/* Hero Section */}
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-gray-100 mb-6">
+            {/* <h2 className="text-5xl font-bold text-gray-100 mb-6">
               Competitive Programming,
               <span className="text-blue-400"> Live</span>
-            </h2>
+            </h2> */}
             <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Race against other programmers in real-time. Solve coding
-              challenges, climb the leaderboard, and improve your skills
-              together.
+              Race against another programmer in real-time to solve assembly
+              questions as fast as you can!
             </p>
           </div>
 
@@ -243,13 +260,12 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
                   Create Game
                 </h3>
                 <p className="text-gray-300 mb-6">
-                  Start a new game and invite a friend to join
-                  your room.
+                  Start a new game and invite a friend to join your room.
                 </p>
               </div>
-              <div 
+              <div
                 className="relative"
-                onMouseEnter={() => setTooltipVisible('create')}
+                onMouseEnter={() => setTooltipVisible("create")}
                 onMouseLeave={() => setTooltipVisible(null)}
               >
                 <button
@@ -264,11 +280,11 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
                     }
                     rounded transition-colors duration-150`}
                 >
-                  {gameCode ? "Game code: " + gameCode : "Create New Game"}
+                  {gameId ? "Game code: " + gameId : "Create New Game"}
                 </button>
-                
+
                 {/* Create Game Tooltip */}
-                {tooltipVisible === 'create' && getCreateGameTooltip() && (
+                {tooltipVisible === "create" && getCreateGameTooltip() && (
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
                     <div className="bg-gray-700 text-gray-100 text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
                       {getCreateGameTooltip()}
@@ -295,26 +311,26 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
                   <input
                     type="text"
                     placeholder="Enter game code"
-                    value={gameCode}
-                    onChange={(e) => setGameCode(e.target.value)}
+                    value={gameId}
+                    onChange={(e) => setgameId(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400"
                   />
                 </div>
               </div>
-              <div 
+              <div
                 className="relative"
-                onMouseEnter={() => setTooltipVisible('join')}
+                onMouseEnter={() => setTooltipVisible("join")}
                 onMouseLeave={() => setTooltipVisible(null)}
               >
                 <button
                   onClick={handleJoinGame}
                   disabled={
-                    !gameCode.trim() || !playerName.trim() || !isConnected
+                    !gameId.trim() || !playerName.trim() || !isConnected
                   }
                   className={`
                     w-full px-6 py-3 
                     ${
-                      !gameCode.trim() || !playerName.trim() || !isConnected
+                      !gameId.trim() || !playerName.trim() || !isConnected
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
                     }
@@ -322,9 +338,9 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPla
                 >
                   Join Game
                 </button>
-                
+
                 {/* Join Game Tooltip */}
-                {tooltipVisible === 'join' && getJoinGameTooltip() && (
+                {tooltipVisible === "join" && getJoinGameTooltip() && (
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
                     <div className="bg-gray-700 text-gray-100 text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
                       {getJoinGameTooltip()}
