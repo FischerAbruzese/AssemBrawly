@@ -12,14 +12,13 @@ class ConsolePrinter(private val gameManager: GameManager) {
         if (isRunning) return
         isRunning = true
 		print("\u001b[30;1H\u001b[0J") 
-		println("Not printing in release mode")
         
-        // scope.launch {
-        //     while (isRunning) {
-        //         gameManager.printGameState()
-        //         delay(1000)
-        //     }
-        // }
+        scope.launch {
+            while (isRunning) {
+                gameManager.printGameState()
+                delay(1000)
+            }
+        }
     }
     
     fun stop() {

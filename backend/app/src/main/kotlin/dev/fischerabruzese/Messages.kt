@@ -164,6 +164,6 @@ fun Frame.messageType(): RecievedMessageType {
 }
 
 private fun debugLogMessage(category: String, message: String) {
-    // val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))
-    // System.err.println("[$timestamp] [MSG_$category] $message")
+    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))
+    System.err.println("            [$timestamp] [MSG_$category] $message")
 }
