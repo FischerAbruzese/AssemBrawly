@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import x86SamplesText from './assets/x86Samples.txt?raw';
+import riscvSamples from './assets/riscvSamples.txt?raw';
 
 interface FloatingSymbol {
   id: number;
@@ -19,7 +19,7 @@ const FloatingAssemblySymbols: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
 
-  const assemblySymbols = x86SamplesText.trim().split('\n');
+  const assemblySymbols = riscvSamples.trim().split('\n');
 
   // Update dimensions on resize
   useEffect(() => {

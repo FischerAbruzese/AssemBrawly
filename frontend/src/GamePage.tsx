@@ -1,16 +1,17 @@
-import React, { useState, useCallback } from "react";
-import { Play, Menu } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Play, Menu, Heart } from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
-import {runningRunResponse} from "./WebSocket";
+import { runningRunResponse } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
-import X86CheatSheet from "./X86CheatSheet";
+import type { Player, GameRunningState } from "./App";
+import RiscVCheatSheet from "./RiscVCheatSheet";
+import { useConsoleFlash } from "./useConsoleFlash"; // adjust path as needed
 
 interface GamePageProps {
-  setGameRunning: (gameRunning: boolean) => void;
+  setGameRunning: (gameRunning: GameRunningState) => void;
   webSocketProps: WebSocketProps;
-  playerName: string;
-  opponentCode: string;
-  opponentConsole: string;
+  user: Player;
+  opponent: Player;
 }
 
 interface ResizeHandleProps {
@@ -66,29 +67,31 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({
 const GamePage: React.FC<GamePageProps> = ({
   setGameRunning,
   webSocketProps,
-  playerName,
-  opponentCode,
-  opponentConsole,
+  user,
+  opponent,
 }) => {
-  const {
-    isConnected,
-    problem,
-    userCode,
-    serverRunResponse,
-    gameId,
-    submitCode,
-    setUserCode,
-    syncUserCode,
-  } = webSocketProps;
+  const { isConnected, problem, gameId, submitCode } = webSocketProps;
 
-  // Create a wrapper function that calls both setUserCode and syncUserCode
-  const handleUserCodeChange = useCallback(
-    (newCode: string) => {
-      setUserCode(newCode);
-      syncUserCode(newCode);
-    },
-    [setUserCode, syncUserCode]
-  );
+  const {
+    playerCode: opponentCode,
+    playerConsole: opponentConsole,
+    playerHealth: opponentHealth,
+    playerLanguage: opponentLanguage,
+    playerName: opponentName,
+  } = opponent;
+
+  const {
+    playerCode: userCode,
+    playerConsole: userConsole,
+    playerHealth: userHealth,
+    playerLanguage: userLanguage,
+    playerName: userName,
+    setPlayerCode: setUserCode,
+    setPlayerConsole: setUserConsole,
+    setPlayerHealth: setUserHealth,
+    setPlayerLanguage: setUserLanguage,
+    setPlayerName: setUserName,
+  } = user;
 
   // Layout state
   const [leftPanelWidth, setLeftPanelWidth] = useState(30); // percentage
@@ -96,9 +99,20 @@ const GamePage: React.FC<GamePageProps> = ({
   const [leftCodeHeight, setLeftCodeHeight] = useState(60); // percentage of left panel
   const [centerProblemHeight, setCenterProblemHeight] = useState(50); // percentage of center panel
   const [rightCodeHeight, setRightCodeHeight] = useState(60); // percentage of right panel
+  const [problemFlashState, setProblemFlashState] = useState("none");
+
+  useEffect(() => {
+    if (problem.description) {
+      setProblemFlashState("flash");
+      const timer = setTimeout(() => setProblemFlashState("none"), 700);
+      return () => clearTimeout(timer);
+    }
+  }, [problem.description]);
+
+  const maxHearts = 5;
 
   // Running state
-  const isRunning = () => serverRunResponse === runningRunResponse;
+  const isRunning = () => userConsole === runningRunResponse;
 
   // Resize handlers
   const handleLeftCenterResize = useCallback(
@@ -183,6 +197,37 @@ const GamePage: React.FC<GamePageProps> = ({
     setGameRunning(false);
   };
 
+  // Vertical heart column component
+  const HeartColumn: React.FC<{ side: "left" | "right" }> = ({
+    side,
+  }) => {
+    const heartsToDisplay = side === "left" ? userHealth : opponentHealth;
+    const heartsToHide = maxHearts - heartsToDisplay;
+
+    return (
+      <div
+        className={`flex flex-col justify-center items-center py-4 bg-gray-750 ${
+          side === "left" ? "border-r" : "border-l"
+        } border-gray-600`}
+        style={{ minWidth: "32px" }}
+      >
+        {Array.from({ length: heartsToDisplay }, (_, i) => (
+          <Heart key={i} className="w-4 h-4 text-red-500 fill-red-500 my-1" />
+        ))}
+        {Array.from({ length: heartsToHide }, (_, i) => (
+          <Heart
+            key={i + heartsToDisplay}
+            className="w-4 h-4 text-gray-800 fill-gray-800 my-1"
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const { flashClasses: userFlashClasses } = useConsoleFlash(userConsole);
+  const { flashClasses: opponentFlashClasses } =
+    useConsoleFlash(opponentConsole);
+
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
       {/* Header */}
@@ -216,15 +261,17 @@ const GamePage: React.FC<GamePageProps> = ({
             style={{ height: `${leftCodeHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">{playerName + "'s Code"}</h3>
+              <h3 className="text-sm font-medium text-gray-200">
+                {userName + "'s Code"}
+              </h3>
               <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200">
-                <option>Python</option>
+                <option>RISC-V</option>
               </select>
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
               <textarea
                 value={userCode}
-                onChange={(e) => handleUserCodeChange(e.target.value)}
+                onChange={(e) => setUserCode(e.target.value)}
                 className="w-full h-full p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none outline-none border-0"
                 style={{
                   fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -254,18 +301,18 @@ const GamePage: React.FC<GamePageProps> = ({
                 onClick={() => {
                   submitCode();
                 }}
-                disabled={isRunning ()}
+                disabled={isRunning()}
                 className="flex items-center space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded transition-colors duration-150"
               >
                 <Play className="w-3 h-3" />
-                <span>{isRunning ()? "Running..." : "Run Code"}</span>
+                <span>{isRunning() ? "Running..." : "Run Code"}</span>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-800 min-h-0">
+            <div
+              className={`flex-1 overflow-y-auto p-4 min-h-0 ${userFlashClasses}`}
+            >
               <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap">
-                {serverRunResponse.success
-                  ? "SUCCESS"
-                  : serverRunResponse.message}
+                {userConsole}
               </pre>
             </div>
           </div>
@@ -283,17 +330,32 @@ const GamePage: React.FC<GamePageProps> = ({
           style={{ width: `${centerPanelWidth}%` }}
           data-center-panel
         >
-          {/* Problem Description */}
+          {/* Problem Description with Hearts */}
           <div
-            className="flex flex-col overflow-hidden min-h-0"
+            className="flex overflow-hidden min-h-0"
             style={{ height: `${centerProblemHeight}%` }}
           >
-            <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">Problem</h3>
+            {/* Left Hearts */}
+            <HeartColumn side="left" />
+
+            {/* Problem Content */}
+            <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
+                <h3 className="text-sm font-medium text-gray-200">Problem</h3>
+              </div>
+              <div
+                className={`flex-1 overflow-y-auto p-4 text-sm min-h-0 transition-all duration-1000 ease-in-out ${
+                  problemFlashState === "flash"
+                    ? "bg-purple-800 shadow-lg shadow-purple-500/20"
+                    : "bg-transparent"
+                }`}
+              >
+                <p className="mb-4 text-gray-300">{problem.description}</p>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 text-sm min-h-0">
-              <p className="mb-4 text-gray-300">{problem.description}</p>
-            </div>
+
+            {/* Right Hearts */}
+            <HeartColumn side="right" />
           </div>
 
           <ResizeHandle
@@ -302,16 +364,18 @@ const GamePage: React.FC<GamePageProps> = ({
             className="flex-shrink-0"
           />
 
-          {/* X86 Assembly Cheatsheet */}
+          {/* RiscV Assembly Cheatsheet */}
           <div
             className="flex flex-col overflow-hidden min-h-0"
             style={{ height: `${centerCheatsheetHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">x86 Assembly Cheatsheet</h3>
+              <h3 className="text-sm font-medium text-gray-200">
+                RISC-V Assembly Cheatsheet
+              </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4 min-h-0 bg-gray-800">
-              <X86CheatSheet />
+              <RiscVCheatSheet />
             </div>
           </div>
         </div>
@@ -335,10 +399,13 @@ const GamePage: React.FC<GamePageProps> = ({
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex items-center justify-between flex-shrink-0">
               <h3 className="text-sm font-medium text-gray-200">
-                Opp code
+                {opponentName + "'s Code"}
               </h3>
-              <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200">
-                <option>Python</option>
+              <select
+                className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200"
+                disabled
+              >
+                <option>{opponentLanguage}</option>
               </select>
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
@@ -371,9 +438,10 @@ const GamePage: React.FC<GamePageProps> = ({
                 Console - Right
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-800 min-h-0">
+            <div
+              className={`flex-1 overflow-y-auto p-4 min-h-0 ${opponentFlashClasses}`}
+            >
               <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap">
-                {/* You might want separate response state for right panel */}
                 {opponentConsole}
               </pre>
             </div>
