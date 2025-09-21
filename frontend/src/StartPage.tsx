@@ -83,7 +83,7 @@ const StartPage: React.FC<StartPageProps> = ({
   // Get tooltip message for Create Game button
   const getCreateGameTooltip = () => {
     if (!isConnected) return "Connect to server to create a game";
-    if (playerName.trim()) return "Enter your name to create a game";
+    if (!playerName.trim()) return "Enter your name to create a game";
     return null;
   };
 
