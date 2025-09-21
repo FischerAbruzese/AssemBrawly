@@ -28,13 +28,21 @@ class Player(
 		)
 
 		coroutineScope {
-            launch {
-                handleIncoming()
-            }
-            launch {
-                sendOpponentCode()
-            }
-        }
+			launch {
+				try {
+					handleIncoming()
+				} catch (e: Exception) {
+					println("handleIncoming failed for $uuid: ${e.message}")
+				}
+			}
+			launch {
+				try {
+					sendOpponentCode()
+				} catch (e: Exception) {
+					println("sendOpponentCode failed for $uuid: ${e.message}")
+				}
+			}
+		}
 	}
 
 	val opponentCode = AtomicReference<Frame.Text?>(null)
@@ -89,7 +97,7 @@ class Player(
                 UNSUPPORTED -> {
 					websocket.outgoing.send(createMessage("info", InfoMessage("unsupported message type :(")))
 				}
-                CLOSE -> {}
+                CLOSE -> {return}
             }
 		}
 	}
@@ -98,8 +106,13 @@ class Player(
 	val gameStarted = AtomicBoolean(false)
 
 	suspend fun passWebsocketControl() {
-		while(!gameStarted.load()) {
+		var waitTime = 0
+		while(!gameStarted.load() && waitTime < 300000) { // 5 min timeout
 			delay(1000)
+			waitTime += 1000
+		}
+		if (!gameStarted.load()) {
+			throw Exception("Game start timeout")
 		}
 		runIndividualGame()
 	}

@@ -106,9 +106,11 @@ fun Application.configureSockets() {
 				executeJoinAction(joinMessage, player)
 			}
 
-			player.passWebsocketControl()
-
-			lobby.playerLeft(player)
+			try {
+				player.passWebsocketControl()
+			} finally {
+				lobby.playerLeft(player)
+			}
 		}
 	}
 }
