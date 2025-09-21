@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Play, Users, BookOpen, Code, Trophy, Zap, X } from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
+import FloatingAssemblySymbols from "./FloatingAssemblySymbols";
 
 interface StartPageProps {
   webSocketProps: WebSocketProps;
@@ -105,8 +106,11 @@ const StartPage: React.FC<StartPageProps> = ({
   if (showTutorial) {
     return (
       <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
+        {/* Floating Symbols Background */}
+        <FloatingAssemblySymbols />
+        
         {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+        <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0 relative z-10">
           <div className="flex items-center justify-center">
             <img
               src="/x86.svg"
@@ -127,7 +131,7 @@ const StartPage: React.FC<StartPageProps> = ({
         </header>
 
         {/* Tutorial Content */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 relative z-10">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-100 mb-4">
@@ -205,8 +209,11 @@ const StartPage: React.FC<StartPageProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
+      {/* Floating Symbols Background */}
+      <FloatingAssemblySymbols />
+      
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+      <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0 relative z-10">
         <div className="flex items-center justify-center">
             <img
               src="/x86.svg"
@@ -220,7 +227,7 @@ const StartPage: React.FC<StartPageProps> = ({
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto relative z-10">
         <div className="max-w-4xl mx-auto px-6 py-12">
           {/* Hero Section */}
           <div className="text-center mb-16">
