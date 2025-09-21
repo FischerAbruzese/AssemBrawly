@@ -1,16 +1,131 @@
 problems:
   - description: "Return the sum of the first 50 fib numbers. The first 3 fib numbers are 0 1 1."
     starterCode: |
+      .text
       solution:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "500" #"20365011073"
+    solution: "20365011073"
 
-  - description: "Example Problem 2: Correct solution is 12."
+  - description: "Given the ASCII string 'HELLO WORLD!', return the sum of all ASCII values."
     starterCode: |
+      .data
+      input_string: .asciz "HELLO WORLD!"
+
+      .text
+      solution:
+          # String address loaded in a1
+          la a1, input_string
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "836"
+
+  - description: "Find the maximum value in this array: [15, 3, 27, 8, 19, 42, 11]. Return the maximum value."
+    starterCode: |
+      .data
+      input_array: .word 15, 3, 27, 8, 19, 42, 11
+
+      .text
+      solution:
+          # Array base address loaded in a1, length in a2
+          la a1, input_array
+          li a2, 7
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "42"
+
+  - description: "Count how many times the character 'A' appears in the string 'BANANA'. Return the count."
+    starterCode: |
+      .data
+      input_string: .asciz "BANANA"
+
+      .text
+      solution:
+          # String address loaded in a1
+          la a1, input_string
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "3"
+
+  - description: "Implement binary search to find the index of value 17 in the sorted array [2, 5, 8, 12, 17, 23, 30]. Return the index (0-based)."
+    starterCode: |
+      .data
+      input_array: .word 2, 5, 8, 12, 17, 23, 30
+
+      .text
+      solution:
+          # Array base address loaded in a1, length in a2, target value in a3
+          la a1, input_array
+          li a2, 7
+          li a3, 17
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "4"
+
+  - description: "Check if the string 'RACECAR' is a palindrome. Return 1 if true, 0 if false."
+    starterCode: |
+      .data
+      input_string: .asciz "RACECAR"
+
+      .text
+      solution:
+          # String address loaded in a1
+          la a1, input_string
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "1"
+
+  - description: "Reverse the bits of the 8-bit number 156 (10011100 in binary). Return the decimal value of the reversed bits."
+    starterCode: |
+      .text
+      solution:
+          # Input value loaded in a1
+          li a1, 156
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "57"
+
+  - description: "Sort the array [64, 34, 25, 12, 22, 11, 90] in ascending order and return the element at index 3."
+    starterCode: |
+      .data
+      input_array: .word 64, 34, 25, 12, 22, 11, 90
+
+      .text
+      solution:
+          # Array base address loaded in a1, length in a2
+          la a1, input_array
+          li a2, 7
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "25"
+
+  - description: "Count the number of words in the string 'The quick brown fox jumps'. Words are separated by single spaces."
+    starterCode: |
+      .data
+      input_string: .asciz "The quick brown fox jumps"
+
+      .text
+      solution:
+          # String address loaded in a1
+          la a1, input_string
+          # Return a 64-bit integer in a0.
+          li a0, 0
+          ret
+    solution: "5"
+
+  - description: "Calculate the XOR of all numbers from 1 to 16 inclusive."
+    starterCode: |
+      .text
       solution:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "12" #"20365011073"
+    solution: "16"

@@ -120,7 +120,7 @@ def main() -> None:
         ]
     )
 
-    payload = prelude + code + trailer
+    payload = code + trailer
 
     name = "py_sandbox_" + secrets.token_hex(8)
 

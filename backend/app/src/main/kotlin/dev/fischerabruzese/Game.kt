@@ -17,7 +17,6 @@ class Player(
 	val messageBox = AtomicReference<List<Frame>>(listOf())
 
 	suspend fun runIndividualGame() {
-		websocket.outgoing.send(createMessage("success", Unit))
 		delay(50)
 		websocket.outgoing.send(
 			createMessage("opponentCode", OpponentCode(game!!.currentProblem.starterCode)),
@@ -62,6 +61,7 @@ class Player(
 			delay(100)
 			while(messageBox.load().isNotEmpty()) {
 				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
+				System.err.println("Sending -> ${this.name!!}: ${(message as Frame.Text).readText()}".take(80))
 				websocket.send(message)
 			}
 			if(!gameStarted.load()) {
@@ -161,6 +161,7 @@ class Game(
 
     suspend fun play() {
 		players.forEach { health[it] = 5 }
+		send(players, createMessage("success", Unit))
 		newProblem()
         for (player in players) {
 			player.gameStarted.store(true)
