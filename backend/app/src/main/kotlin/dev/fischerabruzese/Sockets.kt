@@ -83,22 +83,26 @@ suspend fun DefaultWebSocketServerSession.executeJoinAction(joinMessage: JoinOpt
 
 suspend fun gameGarbageCollector(gameManager: GameManager) {
 	while(true) {
-		for(game in gameManager.games) {
-			if (game.value.players.all { !it.websocket.isActive }) {
-				gameManager.killGame(game.value)
-			}
-			delay((120000/gameManager.games.size).toLong())
+		val deadGame = lobby.games.map {it.value}.find {it.players.all{it2 -> !it2.websocket.isActive}}
+		if (deadGame != null) {
+			gameManager.killGame(deadGame)
+			delay(500)
+		}
+		else {
+			delay(30_000)
 		}
 	}
 }
 
 suspend fun lobbyGarbageCollector(gameManager: GameManager) {
 	while(true) {
-		for(player in gameManager.lobby) {
-			if (!player.websocket.isActive) {
-				gameManager.lobby -= player
-			}
-			delay((120000/gameManager.lobby.size).toLong())
+		val player = lobby.lobby.find {!it.websocket.isActive}
+		if (player != null) {
+			gameManager.lobby.remove(player)
+			delay(500)
+		}
+		else {
+			delay(30_000)
 		}
 	}
 }
