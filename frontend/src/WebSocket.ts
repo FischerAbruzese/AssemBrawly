@@ -76,6 +76,11 @@ export const useWebSocket = (
             break;
           case "created game":
             setGameId(data.data.id);
+            navigator.clipboard.writeText(gameId).then(function() {
+              console.log('Copied the game id: ' + gameId);
+            }).catch(function(err) {
+              console.error('Error in copying text: ', err);
+            });
             break;
           case "opponentCode":
             console.log("OPPOWNENT CODE", data.data.code);
