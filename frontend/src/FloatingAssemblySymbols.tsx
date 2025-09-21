@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import x86SamplesText from './assets/x86Samples.txt?raw';
 
 interface FloatingSymbol {
   id: number;
@@ -18,21 +19,7 @@ const FloatingAssemblySymbols: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
 
-  const assemblySymbols = [
-    'MOV', 'ADD', 'SUB', 'MUL', 'DIV', 'CMP', 'JMP', 'JE', 'JNE', 'JG', 'JL',
-    'PUSH', 'POP', 'CALL', 'RET', 'NOP', 'INT', 'AND', 'OR', 'XOR', 'NOT',
-    'SHL', 'SHR', 'ROL', 'ROR', 'INC', 'DEC', 'LEA', 'TEST', 'LOOP',
-    'EAX', 'EBX', 'ECX', 'EDX', 'ESP', 'EBP', 'ESI', 'EDI',
-    'AX', 'BX', 'CX', 'DX', 'SP', 'BP', 'SI', 'DI',
-    'AL', 'BL', 'CL', 'DL', 'AH', 'BH', 'CH', 'DH',
-    '[', ']', '+', '-', '*', '/', '%', '&', '|', '^', '~',
-    '0x', '#', '$', '@', ':', ';', ',', '.', '...',
-    'BYTE', 'WORD', 'DWORD', 'QWORD', 'PTR',
-    'SECTION', 'ORG', 'DB', 'DW', 'DD', 'DQ',
-    'EXTERN', 'GLOBAL', 'LOCAL', 'PROC', 'ENDP',
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    '10', '11', '12', '13', '14', '15'
-  ];
+  const assemblySymbols = x86SamplesText.trim().split('\n');
 
   // Update dimensions on resize
   useEffect(() => {
