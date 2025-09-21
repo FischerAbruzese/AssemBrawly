@@ -17,17 +17,6 @@ class Player(
 	val messageBox = AtomicReference<List<Frame>>(listOf())
 
 	suspend fun runIndividualGame() {
-		delay(50)
-		websocket.outgoing.send(
-			createMessage("opponentCode", OpponentCode(game!!.currentProblem.starterCode)),
-		)
-		for(player in game!!.players){
-			if(player == this) continue
-
-			websocket.outgoing.send(
-				createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", game!!.health[player]!!, ""))
-			)
-		}
 
 		try {
 			coroutineScope {
@@ -163,6 +152,11 @@ class Game(
 		players.forEach { health[it] = 5 }
 		send(players, createMessage("success", Unit))
 		newProblem()
+		delay(50)
+		send(players, createMessage("opponentCode", OpponentCode(currentProblem.starterCode)))
+		for(player in players){
+			send(players.filterNot {it == player}, createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", health[player]!!, "")))
+		}
         for (player in players) {
 			player.gameStarted.store(true)
         }

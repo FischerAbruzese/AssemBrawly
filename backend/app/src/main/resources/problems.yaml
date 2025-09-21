@@ -22,6 +22,7 @@ problems:
           ret
     solution: "836"
 
+    #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Find the maximum value in this array: [15, 3, 27, 8, 19, 42, 11]. Return the maximum value."
     starterCode: |
       .data
@@ -37,6 +38,7 @@ problems:
           ret
     solution: "42"
 
+    #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Count how many times the character 'A' appears in the string 'BANANA'. Return the count."
     starterCode: |
       .data
@@ -51,6 +53,7 @@ problems:
           ret
     solution: "3"
 
+    #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Implement binary search to find the index of value 17 in the sorted array [2, 5, 8, 12, 17, 23, 30]. Return the index (0-based)."
     starterCode: |
       .data
@@ -67,6 +70,7 @@ problems:
           ret
     solution: "4"
 
+    #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Check if the string 'RACECAR' is a palindrome. Return 1 if true, 0 if false."
     starterCode: |
       .data
@@ -92,6 +96,7 @@ problems:
           ret
     solution: "57"
 
+    #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Sort the array [64, 34, 25, 12, 22, 11, 90] in ascending order and return the element at index 3."
     starterCode: |
       .data
@@ -107,6 +112,7 @@ problems:
           ret
     solution: "25"
 
+    #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Count the number of words in the string 'The quick brown fox jumps'. Words are separated by single spaces."
     starterCode: |
       .data
