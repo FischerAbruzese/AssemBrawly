@@ -47,11 +47,12 @@ class Player(
 
 	suspend fun pollInbox() {
 		while(true) {
-			delay(100)
+			delay(1000)
 			while(messageBox.load().isNotEmpty()) {
 				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
 				System.err.println("Sending -> ${this.name!!}: ${(message as Frame.Text).readText()}".take(80))
 				websocket.send(message)
+				delay(150)
 			}
 			if(!gameStarted.load()) {
 				throw ReturnToLobby()
@@ -149,6 +150,12 @@ class Game(
 	lateinit var currentProblem: RISCVProblem;
 
     suspend fun play() {
+        for (player in players) {
+			player.gameStarted.store(true)
+        }
+
+		delay(200)
+
 		players.forEach { health[it] = 5 }
 		send(players, createMessage("success", Unit))
 		newProblem()
@@ -157,9 +164,6 @@ class Game(
 		for(player in players){
 			send(players.filterNot {it == player}, createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", health[player]!!, "")))
 		}
-        for (player in players) {
-			player.gameStarted.store(true)
-        }
     }
 
 	suspend fun send(recievers: List<Player>, message: Frame) {
