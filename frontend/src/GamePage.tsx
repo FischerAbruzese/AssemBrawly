@@ -5,7 +5,7 @@ import { runningRunResponse } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 import type { Player, GameRunningState } from "./App";
 import RiscVCheatSheet from "./RiscVCheatSheet";
-import { useConsoleFlash } from "./useConsoleFlash"; // adjust path as needed
+import { useConsoleFlash, useHealthFlash, useProblemFlash } from "./flashHooks";
 
 interface GamePageProps {
   setGameRunning: (gameRunning: GameRunningState) => void;
@@ -70,7 +70,7 @@ const GamePage: React.FC<GamePageProps> = ({
   user,
   opponent,
 }) => {
-  const { isConnected, problem, gameId, submitCode } = webSocketProps;
+  const { isConnected, problem, gameId, submitCode, syncCode } = webSocketProps;
 
   const {
     playerCode: opponentCode,
@@ -99,15 +99,13 @@ const GamePage: React.FC<GamePageProps> = ({
   const [leftCodeHeight, setLeftCodeHeight] = useState(60); // percentage of left panel
   const [centerProblemHeight, setCenterProblemHeight] = useState(50); // percentage of center panel
   const [rightCodeHeight, setRightCodeHeight] = useState(60); // percentage of right panel
-  const [problemFlashState, setProblemFlashState] = useState("none");
 
-  useEffect(() => {
-    if (problem.description) {
-      setProblemFlashState("flash");
-      const timer = setTimeout(() => setProblemFlashState("none"), 700);
-      return () => clearTimeout(timer);
-    }
-  }, [problem.description]);
+  // Flash hooks
+  const { flashClasses: userConsoleFlashClasses } = useConsoleFlash(userConsole);
+  const { flashClasses: opponentConsoleFlashClasses } = useConsoleFlash(opponentConsole);
+  const { flashClasses: userHealthFlashClasses } = useHealthFlash(userHealth);
+  const { flashClasses: opponentHealthFlashClasses } = useHealthFlash(opponentHealth);
+  const { flashClasses: problemFlashClasses } = useProblemFlash(problem.description);
 
   const maxHearts = 5;
 
@@ -197,18 +195,17 @@ const GamePage: React.FC<GamePageProps> = ({
     setGameRunning(false);
   };
 
-  // Vertical heart column component
-  const HeartColumn: React.FC<{ side: "left" | "right" }> = ({
-    side,
-  }) => {
+  // Vertical heart column component with flash support
+  const HeartColumn: React.FC<{ side: "left" | "right" }> = ({ side }) => {
     const heartsToDisplay = side === "left" ? userHealth : opponentHealth;
     const heartsToHide = maxHearts - heartsToDisplay;
+    const flashClasses = side === "left" ? userHealthFlashClasses : opponentHealthFlashClasses;
 
     return (
       <div
         className={`flex flex-col justify-center items-center py-4 bg-gray-750 ${
           side === "left" ? "border-r" : "border-l"
-        } border-gray-600`}
+        } border-gray-600 ${flashClasses}`}
         style={{ minWidth: "32px" }}
       >
         {Array.from({ length: heartsToDisplay }, (_, i) => (
@@ -223,10 +220,6 @@ const GamePage: React.FC<GamePageProps> = ({
       </div>
     );
   };
-
-  const { flashClasses: userFlashClasses } = useConsoleFlash(userConsole);
-  const { flashClasses: opponentFlashClasses } =
-    useConsoleFlash(opponentConsole);
 
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
@@ -271,7 +264,10 @@ const GamePage: React.FC<GamePageProps> = ({
             <div className="flex-1 overflow-hidden min-h-0">
               <textarea
                 value={userCode}
-                onChange={(e) => setUserCode(e.target.value)}
+                onChange={(e) => {
+                  setUserCode(e.target.value);
+                  syncCode(e.target.value);
+                }}
                 className="w-full h-full p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none outline-none border-0"
                 style={{
                   fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -308,9 +304,7 @@ const GamePage: React.FC<GamePageProps> = ({
                 <span>{isRunning() ? "Running..." : "Run Code"}</span>
               </button>
             </div>
-            <div
-              className={`flex-1 overflow-y-auto p-4 min-h-0 ${userFlashClasses}`}
-            >
+            <div className={`flex-1 overflow-y-auto p-4 min-h-0 ${userConsoleFlashClasses}`}>
               <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap">
                 {userConsole}
               </pre>
@@ -343,13 +337,7 @@ const GamePage: React.FC<GamePageProps> = ({
               <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-200">Problem</h3>
               </div>
-              <div
-                className={`flex-1 overflow-y-auto p-4 text-sm min-h-0 transition-all duration-1000 ease-in-out ${
-                  problemFlashState === "flash"
-                    ? "bg-purple-800 shadow-lg shadow-purple-500/20"
-                    : "bg-transparent"
-                }`}
-              >
+              <div className={`flex-1 overflow-y-auto p-4 text-sm min-h-0 ${problemFlashClasses}`}>
                 <p className="mb-4 text-gray-300">{problem.description}</p>
               </div>
             </div>
@@ -438,9 +426,7 @@ const GamePage: React.FC<GamePageProps> = ({
                 Console - Right
               </h3>
             </div>
-            <div
-              className={`flex-1 overflow-y-auto p-4 min-h-0 ${opponentFlashClasses}`}
-            >
+            <div className={`flex-1 overflow-y-auto p-4 min-h-0 ${opponentConsoleFlashClasses}`}>
               <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap">
                 {opponentConsole}
               </pre>

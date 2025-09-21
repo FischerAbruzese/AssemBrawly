@@ -19,9 +19,11 @@ export interface WebSocketProps {
   problem: Problem;
   gameId: string;
   submitCode: () => void;
+  syncCode: (code: string) => void;
   setProblem: (problem: Problem) => void;
   setGameId: (gameId: string) => void;
   requestNewGame: () => void;
+  joinGame: (gId: string) => void;
 }
 export const useWebSocket = (
   connectionLocation: string,
@@ -56,10 +58,8 @@ export const useWebSocket = (
     setPlayerName: setOpponentName,
   } = opponent;
 
-
-
   const opponentHealthRef = useRef(opponent.playerHealth);
-  
+
   // Update ref whenever opponent health changes
   useEffect(() => {
     opponentHealthRef.current = opponent.playerHealth;
@@ -85,7 +85,7 @@ export const useWebSocket = (
     };
 
     ws.onmessage = (event) => {
-      console.log("Message from server:", event.data);
+      console.log("Message from server:", event);
       try {
         const data = JSON.parse(event.data);
         switch (data.type) {
@@ -101,11 +101,11 @@ export const useWebSocket = (
             console.log("Result: ", data.data);
             setUserConsole(data.data.message);
             if (data.data.success) {
-              decrementOpponentHealth()
+              decrementOpponentHealth();
             }
             break;
           case "success":
-            console.log("Success: ", data.data);
+            console.log("Success");
             setGameRunning(true);
             break;
           case "not enough players":
@@ -144,9 +144,13 @@ export const useWebSocket = (
             setGameId("");
             setProblem(blankProblem);
             break;
+          case "info":
+            console.log("Info: ", data.data.message);
+            break;
         }
       } catch (error) {
-        console.error("Error parsing JSON:", error);
+        // setGameRunning(true);//TODO REMOVE
+        console.error("Error parsing JSON:", error, "Data:", event.data);
       }
     };
 
@@ -180,17 +184,17 @@ export const useWebSocket = (
     }
   };
 
-  //Joining a game
-  useEffect(() => {
-    if (socket && gameId != "") {
+  const joinGame = (gId: string) => {
+    if (socket) {
+      console.log("Sending join to gameId: ", gId);
       socket.send(
         JSON.stringify({
           type: "join",
-          data: { name: userName, gameId: gameId },
+          data: { name: userName, gameId: gId },
         })
       );
     }
-  }, [socket, gameId, userName]);
+  };
 
   const submitCode = () => {
     if (socket) {
@@ -202,13 +206,13 @@ export const useWebSocket = (
   };
 
   //Sync user code
-  useEffect(() => {
+  const syncCode = (code: string) => {
     if (socket) {
       socket.send(
-        JSON.stringify({ type: "userCode", data: { code: userCode } })
+        JSON.stringify({ type: "userCode", data: { code: code } })
       );
     }
-  }, [socket, userCode]);
+  };
 
   return {
     // State
@@ -218,7 +222,9 @@ export const useWebSocket = (
     gameId,
 
     // Methods
+    joinGame,
     submitCode,
+    syncCode,
     setProblem,
     setGameId,
     requestNewGame,

@@ -10,6 +10,7 @@ interface GameOverScreenProps {
 }
 
 const GameOverScreen: React.FC<GameOverScreenProps> = ({ winner, user, onNewGame }) => {
+  console.log("Winner: ", winner.playerName);
   const [animationPhase, setAnimationPhase] = useState(0);
   const isUserWinner = winner.playerName === user.playerName;
 
