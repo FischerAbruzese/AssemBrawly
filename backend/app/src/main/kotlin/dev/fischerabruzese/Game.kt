@@ -47,12 +47,14 @@ class Player(
 
 	suspend fun pollInbox() {
 		while(true) {
-			delay(100)
 			while(messageBox.load().isNotEmpty()) {
 				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
 				System.err.println("Sending -> ${this.name!!}: ${(message as Frame.Text).readText()}".take(80))
 				websocket.send(message)
+				delay(150)
 			}
+			websocket.send(createMessage("problem", ProblemMessage(game!!.currentProblem.description, game!!.currentProblem.starterCode)))
+
 			if(!gameStarted.load()) {
 				throw ReturnToLobby()
 			}
@@ -149,6 +151,10 @@ class Game(
 	lateinit var currentProblem: RISCVProblem;
 
     suspend fun play() {
+        for (player in players) {
+			player.gameStarted.store(true)
+        }
+
 		players.forEach { health[it] = 5 }
 		send(players, createMessage("success", Unit))
 		newProblem()
@@ -157,9 +163,6 @@ class Game(
 		for(player in players){
 			send(players.filterNot {it == player}, createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", health[player]!!, "")))
 		}
-        for (player in players) {
-			player.gameStarted.store(true)
-        }
     }
 
 	suspend fun send(recievers: List<Player>, message: Frame) {
@@ -197,9 +200,12 @@ class Game(
 
 		currentProblem = problem!!
 
-		send(players, createMessage(
-			"problem",
-			ProblemMessage(problem.description, problem.starterCode)
-		))
+		coroutineScope { 
+			delay(200)
+			send(players, createMessage(
+				"problem",
+				ProblemMessage(problem.description, problem.starterCode)
+			))
+		}
 	}
 }
