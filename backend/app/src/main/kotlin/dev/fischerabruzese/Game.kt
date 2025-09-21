@@ -10,11 +10,11 @@ import kotlin.concurrent.atomics.*
 class Player(
     val uuid: String,
 	var name: String?,
-    val websocket: WebSocketServerSession,
+    val websocket: DefaultWebSocketServerSession,
 	var game: Game?
 ) {
 	val gameStarted = AtomicBoolean(false)
-	val messageBox = AtomicReference<List<Frame.Text>>(listOf())
+	val messageBox = AtomicReference<List<Frame>>(listOf())
 
 	suspend fun runIndividualGame() {
 		websocket.outgoing.send(createMessage("success", Unit))
@@ -30,23 +30,32 @@ class Player(
 			)
 		}
 
-		coroutineScope {
-			launch {
-				try {
-					handleIncoming()
-				} catch (e: Exception) {
-					println("handleIncoming failed for $uuid: ${e.message}")
+		try {
+			coroutineScope {
+				launch {
+					try {
+						handleIncoming()
+					} catch (e: Exception) {
+						println("handleIncoming failed for $uuid: ${e.message}")
+					}
+				}
+				launch {
+					try {
+						pollInbox()
+					} catch (e: ReturnToLobby) {
+						throw ReturnToLobby()
+					}
+					catch (e: Exception) {
+						println("pollInbox failed for $uuid: ${e.message}")
+					}
 				}
 			}
-			launch {
-				try {
-					pollInbox()
-				} catch (e: Exception) {
-					println("pollInbox failed for $uuid: ${e.message}")
-				}
-			}
+		} catch (e: ReturnToLobby) {
+			return
 		}
 	}
+
+	private class ReturnToLobby: Throwable()
 
 	suspend fun pollInbox() {
 		while(true) {
@@ -54,6 +63,9 @@ class Player(
 			while(messageBox.load().isNotEmpty()) {
 				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
 				websocket.send(message)
+			}
+			if(!gameStarted.load()) {
+				throw ReturnToLobby()
 			}
 		}
 	}
@@ -104,7 +116,7 @@ class Player(
 						))
 
 						if(success) {
-							delay(3000)
+							delay(1500)
 							game!!.newProblem()
 						}
 					} catch (e: Exception) {
@@ -155,7 +167,7 @@ class Game(
         }
     }
 
-	suspend fun send(recievers: List<Player>, message: Frame.Text) {
+	suspend fun send(recievers: List<Player>, message: Frame) {
 		for (player in recievers) {
 			player.messageBox.update{ it + message }
 		}
@@ -170,11 +182,22 @@ class Game(
 	}
 
 	suspend fun newProblem() {
-		val problem = problemQueue.removeFirstOrNull()
+		val losers = health.filter { it.value == 0 }
+		if(losers.isNotEmpty()) {
+			send(players, createMessage("gameOver", GameOver(players.find { !(it in losers) }!!.name!!)))
+			delay(1000)
+			for (player in players) {
+				player.gameStarted.store(false)
+			}
+			players.clear()
+			return
+		}
+
+		var problem = problemQueue.removeFirstOrNull()
 
 		if(problem == null) {
-			problemQueue = PROBLEM_SET.shuffled().toMutableList()
-			newProblem()
+			problemQueue.addAll(PROBLEM_SET.shuffled())
+			problem = problemQueue.removeFirstOrNull()
 		}
 
 		currentProblem = problem!!

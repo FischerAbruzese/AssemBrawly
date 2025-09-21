@@ -90,6 +90,11 @@ data class RecievedCode(
 	val code: String
 )
 
+@Serializable
+data class GameOver(
+	val winner: String
+)
+
 enum class RecievedMessageType {
     JOIN,
     CREATE,

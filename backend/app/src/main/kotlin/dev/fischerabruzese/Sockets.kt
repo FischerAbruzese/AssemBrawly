@@ -72,6 +72,24 @@ suspend fun DefaultWebSocketServerSession.executeJoinAction(joinMessage: JoinOpt
 	}
 }
 
+suspend fun DefaultWebSocketServerSession.enterLobby(player: Player) {
+	lobby.registerPlayer(player)
+
+	val joinMessage = waitForJoinMessage(600000) 
+	// println("---Recieved Join Message from ${playerID}---")
+	if (joinMessage == null) {
+		this.close(CloseReason(1000, "timeout"))	
+	}
+	else {
+		player.name = joinMessage.name
+		executeJoinAction(joinMessage, player)
+	}
+
+	player.passWebsocketControl()
+
+	enterLobby(player)
+}
+
 suspend fun gameGarbageCollector(gameManager: GameManager) {
 	while(true) {
 		val deadGame = lobby.games.map {it.value}.find {it.players.all{it2 -> !it2.websocket.isActive}}
@@ -126,22 +144,7 @@ fun Application.configureSockets() {
 			// println("---New Player Conected {$playerID}---")
 			val player = Player(playerID, null, this, null)
 
-			lobby.registerPlayer(player)
-
-			val joinMessage = waitForJoinMessage(600000) 
-			// println("---Recieved Join Message from ${playerID}---")
-			if (joinMessage == null) {
-				this.close(CloseReason(1000, "timeout"))	
-			}
-			else {
-				player.name = joinMessage.name
-				executeJoinAction(joinMessage, player)
-			}
-
-			try {
-				player.passWebsocketControl()
-			} finally {
-			}
+			enterLobby(player)
 		}
 	}
 }
