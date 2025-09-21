@@ -32,3 +32,4 @@ dist-ssr
 *.sw?
 
 backend/.idea
+backend/.kotlin/sessions
