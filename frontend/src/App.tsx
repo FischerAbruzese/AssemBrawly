@@ -65,7 +65,7 @@ function App() {
   }), [userCode, userConsole, userHealth, userLanguage, userName]);
  
   // WebSocket management at the app level
-  const address = "wss://609c23f26da3.ngrok-free.app/2player";
+  const address : string = process.env.REACT_APP_WEBSOCKET_ADDRESS as string;
   const webSocketProps = useWebSocket(address, setGameRunning, user, opponent);
 
   // Check for game over conditions
