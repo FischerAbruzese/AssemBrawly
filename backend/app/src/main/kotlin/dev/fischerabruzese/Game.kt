@@ -30,7 +30,7 @@ class Player(
 			if(player == this) continue
 
 			websocket.outgoing.send(
-				createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", game!!.health[player]!!))
+				createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", game!!.health[player]!!, ""))
 			)
 		}
 
@@ -86,11 +86,21 @@ class Player(
 						val result = App.runSandboxedRISCV(codeObj.code)
 						val success = result.trim() == App.testProblem.solution
 						val message = if(success) "" else "Incorrect Answer\n Output: ${result}"
-						if(!success && game != null) {
-							game!!.health[this] = game!!.health[this]!!.minus(1)
-							val opponents = game?.players?.filter { it != this }
-							game?.sendOppInfo(this)
+
+						if(success) {
+							//heath update your opponent
+							for(player in game!!.players) {
+								if(player==this) continue
+								val newHealth = game!!.health[player]!!.minus(1)
+								game!!.health[player] = newHealth
+								game!!.send(listOf(player), createMessage(
+									"healthUpdate",
+									HealthUpdate(newHealth)
+								))
+							}
 						}
+						//send your opps info about your console updates
+						game?.sendOppInfo(this, message)
 
 						websocket.outgoing.send(createMessage(
 							"result",
@@ -149,11 +159,11 @@ class Game(
 		}
 	}
 
-	suspend fun sendOppInfo(self: Player) {
+	suspend fun sendOppInfo(self: Player, console: String) {
 		for (player in players) {
 			if(player == self) continue
 
-			self.messageBox.store(createMessage("oppInfo", OppInfo(player.name!!, "risc-v", health[player]!!)))
+			self.messageBox.store(createMessage("oppInfo", OppInfo(player.name!!, "risc-v", health[player]!!, console)))
 		}
 	}
 }

@@ -17,10 +17,11 @@ import java.util.UUID
 import dev.fischerabruzese.*
 import dev.fischerabruzese.RecievedMessageType.*
 import kotlinx.serialization.json.jsonPrimitive
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 val lobby = GameManager()
 val consolePrinter = ConsolePrinter(lobby)
-
 
 suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): JoinOptions? {
     return withTimeoutOrNull(timeoutMs) {
@@ -151,7 +152,6 @@ fun Application.configureSockets() {
 			try {
 				player.passWebsocketControl()
 			} finally {
-				lobby.playerLeft(player)
 			}
 		}
 	}
