@@ -2,6 +2,7 @@ package dev.fischerabruzese
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
+import java.time.format.DateTimeFormatter;
 
 class ConsolePrinter(private val gameManager: GameManager) {
     private var isRunning = false
@@ -25,7 +26,7 @@ class ConsolePrinter(private val gameManager: GameManager) {
     private fun GameManager.printGameState() {
         print("\u001b[2J\u001b[H") // Console Clear
         
-        println("┌─ LOBBY(${lobby.size}) ───────────────────────────────────────────────────────────")
+        println("┌─ LOBBY(${lobby.size}) ───────────────────────────────────────────────────────────────")
         if (lobby.isEmpty()) {
             println("│  No players waiting")
         } else {
@@ -33,10 +34,10 @@ class ConsolePrinter(private val gameManager: GameManager) {
                 println("│  ${player.uuid.take(8)}... - ${if (player.websocket.isActive) "CONNECTED" else "DISCONNECTED"}")
             }
         }
-        println("└──────────────────────────────────────────────────────────────────────────────────")
+        println("└──────────────────────────────────────────────────────────────────────────")
         println()
         
-        println("┌─ ACTIVE GAMES (${games.size}) ───────────────────────────────────────────────────")
+        println("┌─ ACTIVE GAMES (${games.size}) ───────────────────────────────────────────────────────")
         if (games.isEmpty()) {
             println("│  No active games")
         } else {
@@ -54,14 +55,13 @@ class ConsolePrinter(private val gameManager: GameManager) {
                 if (count != games.size-1) println("│")
             }
         }
-        println("└──────────────────────────────────────────────────────────────────────────────────")
+        println("└──────────────────────────────────────────────────────────────────────────")
         
         val totalPlayers = lobby.size + games.map{ it.value }.sumOf{ it.players.size }
         println()
         println("Total Players: $totalPlayers | Waiting: ${lobby.size} | In Games: ${games.map{ it.value }.sumOf { it.players.size }}")
-        println("Last updated: ${java.time.LocalTime.now()}")
+        println("Last updated: ${java.time.LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))}")
         println()
     }
 }
 
-private operator fun String.times(n: Int): String = this.repeat(n)

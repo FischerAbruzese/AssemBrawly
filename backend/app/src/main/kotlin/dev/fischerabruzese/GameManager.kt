@@ -1,5 +1,8 @@
 package dev.fischerabruzese
 
+import kotlinx.coroutines.cancel
+import java.util.UUID
+
 class GameManager {
     val games: HashMap<String, Game> = hashMapOf()
     val lobby: MutableSet<Player> = mutableSetOf()
@@ -35,7 +38,7 @@ class GameManager {
     }
 
     private fun newGame(): Game {
-        val game = Game(games.size.toString(), mutableListOf())
+        val game = Game(UUID.randomUUID().toString().take(6), mutableListOf())
         games[game.id] = game
         return game
     }
@@ -46,10 +49,12 @@ class GameManager {
         if (game?.players?.remove(player) != true) {
             throw Exception("Expected player to be removed/game to exist")
         }
+    }
 
-        if (game.players.isEmpty()) {
-            // println("---PURGING GAME ${game.id}---")
-            games.remove(game.id)
+    fun killGame(game: Game) {
+        for (player in game.players) {
+            player.websocket.cancel("Someone killed the game")
         }
+        games.remove(game.id)
     }
 }

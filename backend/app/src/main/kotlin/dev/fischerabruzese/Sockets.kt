@@ -81,6 +81,28 @@ suspend fun DefaultWebSocketServerSession.executeJoinAction(joinMessage: JoinOpt
 	}
 }
 
+suspend fun gameGarbageCollector(gameManager: GameManager) {
+	while(true) {
+		for(game in gameManager.games) {
+			if (game.value.players.all { !it.websocket.isActive }) {
+				gameManager.killGame(game.value)
+			}
+			delay((120000/gameManager.games.size).toLong())
+		}
+	}
+}
+
+suspend fun lobbyGarbageCollector(gameManager: GameManager) {
+	while(true) {
+		for(player in gameManager.lobby) {
+			if (!player.websocket.isActive) {
+				gameManager.lobby -= player
+			}
+			delay((120000/gameManager.lobby.size).toLong())
+		}
+	}
+}
+
 fun Application.configureSockets() {
     install(WebSockets) {
         pingPeriod = 60.seconds
@@ -94,12 +116,22 @@ fun Application.configureSockets() {
     launch {
         consolePrinter.startPrinting(this)
     }
+
+	launch {
+		gameGarbageCollector(lobby)
+	}
+
+	launch {
+		lobbyGarbageCollector(lobby)
+	}
     
     routing {
 		webSocket("/2player") { 
 			val playerID = UUID.randomUUID().toString()
 			// println("---New Player Conected {$playerID}---")
 			val player = Player(playerID, this, null)
+
+			lobby.registerPlayer(player)
 
 
 			val joinMessage = waitForJoinMessage(600000) 
