@@ -2,17 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Play, Users, BookOpen, Code, Trophy, Zap, X } from "lucide-react";
 import type { Problem, RunResponse } from "./WebSocketInterfaces";
 import type { WebSocketProps } from "./WebSocket";
+import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 
 interface StartPageProps {
     webSocketProps: WebSocketProps;
+    playerName: string;
+    setPlayerName: (playerName: string) => void;
 }
 
-const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
+const StartPage: React.FC<StartPageProps> = ({webSocketProps, playerName, setPlayerName}) => {
   const [gameCode, setGameCode] = useState("");
-  const [playerName, setPlayerName] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
 
   const { isConnected, setGameId, requestNewGame } = webSocketProps;
 
@@ -55,27 +58,42 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
     }
   };
 
+  // Get tooltip message for Create Game button
+  const getCreateGameTooltip = () => {
+    if (!isConnected) return "Connect to server to create a game";
+    if (playerName.trim()) return "Enter your name to create a game";
+    return null;
+  };
+
+  // Get tooltip message for Join Game button
+  const getJoinGameTooltip = () => {
+    if (!isConnected) return "Connect to server to join a game";
+    if (!playerName.trim()) return "Enter your name to join a game";
+    if (!gameCode.trim()) return "Enter a game code to join";
+    return null;
+  };
+
   const tutorialSteps = [
     {
-      icon: <Code className="w-8 h-8 text-blue-500" />,
+      icon: <Code className="w-8 h-8 text-blue-400" />,
       title: "Write Code",
       description:
         "Solve coding problems in real-time with Python. Use the built-in editor with syntax highlighting.",
     },
     {
-      icon: <Users className="w-8 h-8 text-green-500" />,
+      icon: <Users className="w-8 h-8 text-green-400" />,
       title: "Compete Live",
       description:
         "Race against other programmers. See their progress and submissions in real-time.",
     },
     {
-      icon: <Trophy className="w-8 h-8 text-yellow-500" />,
+      icon: <Trophy className="w-8 h-8 text-yellow-400" />,
       title: "Climb Leaderboard",
       description:
         "Earn points for correct solutions and fast completion times. Track your ranking.",
     },
     {
-      icon: <Zap className="w-8 h-8 text-purple-500" />,
+      icon: <Zap className="w-8 h-8 text-purple-400" />,
       title: "Get Instant Feedback",
       description:
         "Run your code and see results immediately. Debug with detailed error messages.",
@@ -84,15 +102,15 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
 
   if (showTutorial) {
     return (
-      <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
+      <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
-          <h1 className="text-xl font-semibold text-gray-800">
+        <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+          <h1 className="text-xl font-semibold text-gray-100">
             Assembrawly Tutorial
           </h1>
           <button
             onClick={() => setShowTutorial(false)}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors duration-150"
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-100 text-sm rounded transition-colors duration-150"
           >
             Back to Start
           </button>
@@ -102,10 +120,10 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">
+              <h2 className="text-3xl font-bold text-gray-100 mb-4">
                 How to Play Assembrawly
               </h2>
-              <p className="text-lg text-gray-600">
+              <p className="text-lg text-gray-300">
                 Master assembly programming in real-time
               </p>
             </div>
@@ -114,56 +132,56 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
               {tutorialSteps.map((step, index) => (
                 <div
                   key={index}
-                  className="bg-white p-6 rounded-lg shadow-sm border border-gray-200"
+                  className="bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-600"
                 >
                   <div className="flex items-center space-x-4 mb-4">
                     <div className="flex-shrink-0">{step.icon}</div>
-                    <h3 className="text-xl font-semibold text-gray-800">
+                    <h3 className="text-xl font-semibold text-gray-100">
                       {step.title}
                     </h3>
                   </div>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-300 leading-relaxed">
                     {step.description}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-6">
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8">
+              <h3 className="text-2xl font-semibold text-gray-100 mb-6">
                 Game Interface
               </h3>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                    <BookOpen className="w-12 h-12 text-blue-500 mx-auto" />
+                  <div className="bg-gray-700 p-4 rounded-lg mb-4">
+                    <BookOpen className="w-12 h-12 text-blue-400 mx-auto" />
                   </div>
-                  <h4 className="font-medium text-gray-800 mb-2">
+                  <h4 className="font-medium text-gray-100 mb-2">
                     Problem Panel
                   </h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-300">
                     Read the problem description and understand the requirements
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="bg-green-50 p-4 rounded-lg mb-4">
-                    <Code className="w-12 h-12 text-green-500 mx-auto" />
+                  <div className="bg-gray-700 p-4 rounded-lg mb-4">
+                    <Code className="w-12 h-12 text-green-400 mx-auto" />
                   </div>
-                  <h4 className="font-medium text-gray-800 mb-2">
+                  <h4 className="font-medium text-gray-100 mb-2">
                     Code Editor
                   </h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-300">
                     Write your solution in the code editor
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="bg-purple-50 p-4 rounded-lg mb-4">
-                    <Users className="w-12 h-12 text-purple-500 mx-auto" />
+                  <div className="bg-gray-700 p-4 rounded-lg mb-4">
+                    <Users className="w-12 h-12 text-purple-400 mx-auto" />
                   </div>
-                  <h4 className="font-medium text-gray-800 mb-2">
+                  <h4 className="font-medium text-gray-100 mb-2">
                     Live Activity
                   </h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-300">
                     Compete against other players
                   </p>
                 </div>
@@ -176,26 +194,11 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
-        <h1 className="text-2xl font-bold text-gray-800">Assembrawly</h1>
-
-        {/* Connection Status Indicator */}
-        <div className="flex items-center space-x-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
-            }`}
-          ></div>
-          <span
-            className={`text-xs font-medium ${
-              isConnected ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {isConnected ? "Connected" : "Disconnected"}
-          </span>
-        </div>
+      <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+        <h1 className="text-2xl font-bold text-gray-100">Assembrawly</h1>
+        <ConnectionStatusIndicator isConnected={isConnected} />
       </header>
 
       {/* Main Content */}
@@ -203,103 +206,145 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
         <div className="max-w-4xl mx-auto px-6 py-12">
           {/* Hero Section */}
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-gray-800 mb-6">
+            <h2 className="text-5xl font-bold text-gray-100 mb-6">
               Competitive Programming,
-              <span className="text-blue-600"> Live</span>
+              <span className="text-blue-400"> Live</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
               Race against other programmers in real-time. Solve coding
               challenges, climb the leaderboard, and improve your skills
               together.
             </p>
           </div>
 
+          {/* Player Name Section */}
+          <div className="mb-8">
+            <div className="max-w-md mx-auto">
+              <input
+                id="playerName"
+                type="text"
+                placeholder="Enter your name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400 text-center"
+              />
+            </div>
+          </div>
+
           {/* Action Cards */}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {/* Create Game Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
               <div className="text-center flex-1">
-                <div className="bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Play className="w-8 h-8 text-green-600" />
+                <div className="bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Play className="w-8 h-8 text-green-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                <h3 className="text-xl font-semibold text-gray-100 mb-4">
                   Create Game
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Start a new competitive session and invite a friend to join
+                <p className="text-gray-300 mb-6">
+                  Start a new game and invite a friend to join
                   your room.
                 </p>
               </div>
-              <button
-                onClick={handleCreateGame}
-                disabled={!isConnected}
-                className={`
-                  w-full px-6 py-3 
-                  ${
-                    !isConnected
-                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white font-medium"
-                  }
-                  rounded transition-colors duration-150`}
+              <div 
+                className="relative"
+                onMouseEnter={() => setTooltipVisible('create')}
+                onMouseLeave={() => setTooltipVisible(null)}
               >
-                {gameCode ? "Game code: " + gameCode : "Create New Game"}
-              </button>
+                <button
+                  onClick={handleCreateGame}
+                  disabled={!isConnected || !playerName.trim()}
+                  className={`
+                    w-full px-6 py-3 
+                    ${
+                      !isConnected || !playerName.trim()
+                        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white font-medium"
+                    }
+                    rounded transition-colors duration-150`}
+                >
+                  {gameCode ? "Game code: " + gameCode : "Create New Game"}
+                </button>
+                
+                {/* Create Game Tooltip */}
+                {tooltipVisible === 'create' && getCreateGameTooltip() && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
+                    <div className="bg-gray-700 text-gray-100 text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+                      {getCreateGameTooltip()}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-700"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Join Game Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
               <div className="text-center flex-1">
-                <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Users className="w-8 h-8 text-blue-600" />
+                <div className="bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-8 h-8 text-blue-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                <h3 className="text-xl font-semibold text-gray-100 mb-4">
                   Join Game
                 </h3>
+                <p className="text-gray-300 mb-6">
+                  Ask a friend to start a game!
+                </p>
                 <div className="space-y-4 mb-6">
                   <input
                     type="text"
                     placeholder="Enter game code"
                     value={gameCode}
                     onChange={(e) => setGameCode(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Your name"
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400"
                   />
                 </div>
               </div>
-              <button
-                onClick={handleJoinGame}
-                disabled={
-                  !gameCode.trim() || !playerName.trim() || !isConnected
-                }
-                className={`
-                  w-full px-6 py-3 
-                  ${
-                    !gameCode.trim() || !playerName.trim() || !isConnected
-                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                  }
-                  rounded transition-colors duration-150`}
+              <div 
+                className="relative"
+                onMouseEnter={() => setTooltipVisible('join')}
+                onMouseLeave={() => setTooltipVisible(null)}
               >
-                Join Game
-              </button>
+                <button
+                  onClick={handleJoinGame}
+                  disabled={
+                    !gameCode.trim() || !playerName.trim() || !isConnected
+                  }
+                  className={`
+                    w-full px-6 py-3 
+                    ${
+                      !gameCode.trim() || !playerName.trim() || !isConnected
+                        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    }
+                    rounded transition-colors duration-150`}
+                >
+                  Join Game
+                </button>
+                
+                {/* Join Game Tooltip */}
+                {tooltipVisible === 'join' && getJoinGameTooltip() && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
+                    <div className="bg-gray-700 text-gray-100 text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+                      {getJoinGameTooltip()}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-700"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Tutorial Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
               <div className="text-center flex-1">
-                <div className="bg-purple-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="w-8 h-8 text-purple-600" />
+                <div className="bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="w-8 h-8 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                <h3 className="text-xl font-semibold text-gray-100 mb-4">
                   Tutorial
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-300 mb-6">
                   New to Assembrawly? Learn how to play and master assembly
                   programming.
                 </p>
@@ -320,7 +365,7 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
         <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4">
           <div
             className={`
-              max-w-md w-full bg-white border border-gray-200 rounded-lg shadow-lg
+              max-w-md w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg
               transform transition-all duration-300 ease-in-out
               ${
                 showToast
@@ -330,12 +375,12 @@ const StartPage: React.FC<StartPageProps> = ({webSocketProps}) => {
             `}
           >
             <div className="p-4 flex items-center justify-between">
-              <p className="text-gray-800 text-sm font-medium pr-4">
+              <p className="text-gray-100 text-sm font-medium pr-4">
                 {toastMessage}
               </p>
               <button
                 onClick={handleCloseToast}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
+                className="text-gray-400 hover:text-gray-300 transition-colors duration-150"
               >
                 <X className="w-4 h-4" />
               </button>

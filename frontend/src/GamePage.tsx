@@ -1,12 +1,17 @@
 import React, { useState, useCallback } from "react";
 import { Play, Menu } from "lucide-react";
-import { useWebSocket } from "./WebSocket";
 import type { WebSocketProps } from "./WebSocket";
+import {runningRunResponse} from "./WebSocket";
 import type { Problem, RunResponse } from "./WebSocketInterfaces";
+import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
+import X86CheatSheet from "./X86CheatSheet";
 
 interface GamePageProps {
   setGameRunning: (gameRunning: boolean) => void;
   webSocketProps: WebSocketProps;
+  playerName: string;
+  opponentCode: string;
+  opponentConsole: string;
 }
 
 interface ResizeHandleProps {
@@ -59,7 +64,13 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({
   );
 };
 
-const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) => {
+const GamePage: React.FC<GamePageProps> = ({
+  setGameRunning,
+  webSocketProps,
+  playerName,
+  opponentCode,
+  opponentConsole,
+}) => {
   const {
     isConnected,
     problem,
@@ -68,7 +79,17 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
     gameId,
     submitCode,
     setUserCode,
+    syncUserCode,
   } = webSocketProps;
+
+  // Create a wrapper function that calls both setUserCode and syncUserCode
+  const handleUserCodeChange = useCallback(
+    (newCode: string) => {
+      setUserCode(newCode);
+      syncUserCode(newCode);
+    },
+    [setUserCode, syncUserCode]
+  );
 
   // Layout state
   const [leftPanelWidth, setLeftPanelWidth] = useState(30); // percentage
@@ -78,7 +99,7 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
   const [rightCodeHeight, setRightCodeHeight] = useState(60); // percentage of right panel
 
   // Running state
-  const [isRunning, setIsRunning] = useState(false);
+  const isRunning = () => serverRunResponse === runningRunResponse;
 
   // Right panel code state (separate from left)
   const [rightUserCode, setRightUserCode] = useState("");
@@ -171,32 +192,18 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
         <div className="flex items-center space-x-4">
-                  <button
-                    onClick={handleBackToStart}
-                    className="text-gray-300 hover:text-white transition-colors duration-150"
-                  >
-                    <Menu className="w-5 h-5" />
-                  </button>
-                  <h1 className="text-xl font-semibold text-gray-100">
-                    Assembrawly {gameId && `- Game: ${gameId}`}
-                  </h1>
-                </div>
-
-        {/* Connection Status Indicator */}
-        <div className="flex items-center space-x-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
-            }`}
-          />
-          <span
-            className={`text-xs font-medium ${
-              isConnected ? "text-green-600" : "text-red-600"
-            }`}
+          <button
+            onClick={handleBackToStart}
+            className="text-gray-300 hover:text-white transition-colors duration-150"
           >
-            {isConnected ? "Connected" : "Disconnected"}
-          </span>
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl font-semibold text-gray-100">
+            Assembrawly {gameId && `- Game: ${gameId}`}
+          </h1>
         </div>
+
+        <ConnectionStatusIndicator isConnected={isConnected} />
       </header>
 
       {/* Main Content */}
@@ -213,7 +220,7 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
             style={{ height: `${leftCodeHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">Code - Left</h3>
+              <h3 className="text-sm font-medium text-gray-200">{playerName + "'s Code"}</h3>
               <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200">
                 <option>Python</option>
               </select>
@@ -221,7 +228,7 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
             <div className="flex-1 overflow-hidden min-h-0">
               <textarea
                 value={userCode}
-                onChange={(e) => setUserCode(e.target.value)}
+                onChange={(e) => handleUserCodeChange(e.target.value)}
                 className="w-full h-full p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none outline-none border-0"
                 style={{
                   fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -249,14 +256,13 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
               </h3>
               <button
                 onClick={() => {
-                  setIsRunning(true);
                   submitCode();
                 }}
-                disabled={isRunning}
+                disabled={isRunning ()}
                 className="flex items-center space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded transition-colors duration-150"
               >
                 <Play className="w-3 h-3" />
-                <span>{isRunning ? "Running..." : "Run Code"}</span>
+                <span>{isRunning ()? "Running..." : "Run Code"}</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-gray-800 min-h-0">
@@ -300,18 +306,16 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
             className="flex-shrink-0"
           />
 
-          {/* Cheatsheet */}
+          {/* X86 Assembly Cheatsheet */}
           <div
             className="flex flex-col overflow-hidden min-h-0"
             style={{ height: `${centerCheatsheetHeight}%` }}
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-200">Cheatsheet</h3>
+              <h3 className="text-sm font-medium text-gray-200">x86 Assembly Cheatsheet</h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 text-sm min-h-0 bg-gray-800">
-              <p className="text-gray-400 italic">
-                Cheatsheet content will go here...
-              </p>
+            <div className="flex-1 overflow-y-auto p-4 min-h-0 bg-gray-800">
+              <X86CheatSheet />
             </div>
           </div>
         </div>
@@ -335,7 +339,7 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
           >
             <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex items-center justify-between flex-shrink-0">
               <h3 className="text-sm font-medium text-gray-200">
-                Code - Right
+                Opp code
               </h3>
               <select className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200">
                 <option>Python</option>
@@ -343,14 +347,14 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
             </div>
             <div className="flex-1 overflow-hidden min-h-0">
               <textarea
-                value={rightUserCode}
-                onChange={(e) => setRightUserCode(e.target.value)}
+                value={opponentCode}
                 className="w-full h-full p-4 font-mono text-sm bg-gray-900 text-green-400 resize-none outline-none border-0"
                 style={{
                   fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
                   lineHeight: "1.5",
                 }}
                 spellCheck={false}
+                readOnly
               />
             </div>
           </div>
@@ -370,23 +374,11 @@ const GamePage: React.FC<GamePageProps> = ({ setGameRunning, webSocketProps }) =
               <h3 className="text-sm font-medium text-gray-200">
                 Console - Right
               </h3>
-              <button
-                onClick={() => {
-                  setIsRunning(true);
-                  // You might want to add a separate submit function for right panel
-                  submitCode();
-                }}
-                disabled={isRunning}
-                className="flex items-center space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded transition-colors duration-150"
-              >
-                <Play className="w-3 h-3" />
-                <span>{isRunning ? "Running..." : "Run Code"}</span>
-              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-gray-800 min-h-0">
               <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap">
                 {/* You might want separate response state for right panel */}
-                Console output for right panel...
+                {opponentConsole}
               </pre>
             </div>
           </div>

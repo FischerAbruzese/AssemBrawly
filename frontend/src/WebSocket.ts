@@ -11,6 +11,11 @@ const blankRunResponse: RunResponse = {
   success: false,
 };
 
+export const runningRunResponse: RunResponse = {
+  message: "Running...",
+  success: false,
+};
+
 export interface WebSocketProps {
   isConnected: boolean;
   problem: Problem;
@@ -23,10 +28,13 @@ export interface WebSocketProps {
   setServerRunResponse: (runResponse: RunResponse) => void;
   setGameId: (gameId: string) => void;
   requestNewGame: () => void;
+  syncUserCode: (code: string) => void;
 }
 export const useWebSocket = (
   connectionLocation: string,
-  setGameRunning : (gameRunning: boolean) => void
+  setGameRunning : (gameRunning: boolean) => void,
+  setOpponentCode : (opponentCode: string) => void,
+  setOpponentConsole : (opponentConsole: string) => void,
 ) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -69,6 +77,14 @@ export const useWebSocket = (
           case "created game":
             setGameId(data.data.id);
             break;
+          case "opponentCode":
+            console.log("OPPOWNENT CODE", data.data.code);
+            setOpponentCode(data.data.code);
+            break;
+          case "opponentConsole":
+            console.log("OPPOWNENT CONSOLE", data.data.console);
+            setOpponentConsole(data.data.console);
+            break;
         }
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -87,7 +103,7 @@ export const useWebSocket = (
     return () => {
       ws.close();
     };
-  }, [connectionLocation, setGameRunning]);
+  }, [connectionLocation, setGameRunning, setOpponentCode, setOpponentConsole]);
 
   const requestNewGame = () => {
     if (socket) {
@@ -107,8 +123,17 @@ export const useWebSocket = (
 
   const submitCode = () => {
     if (socket) {
+      setServerRunResponse(runningRunResponse);
       socket.send(
-        JSON.stringify({ type: "usercode", data: { code: userCode } })
+        JSON.stringify({ type: "submitUserCode", data: { code: userCode } })
+      );
+    }
+  };
+
+  const syncUserCode = (code: string) => {
+    if (socket) {
+      socket.send(
+        JSON.stringify({ type: "userCode", data: { code: code } })
       );
     }
   };
@@ -128,5 +153,6 @@ export const useWebSocket = (
     setServerRunResponse,
     setGameId,
     requestNewGame,
+    syncUserCode
   };
 };
