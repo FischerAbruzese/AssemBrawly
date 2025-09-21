@@ -11,6 +11,7 @@ class ConsolePrinter(private val gameManager: GameManager) {
     fun startPrinting(scope: CoroutineScope) {
         if (isRunning) return
         isRunning = true
+		print("\u001b[30;1H\u001b[0J") 
         
         scope.launch {
             while (isRunning) {
@@ -25,8 +26,19 @@ class ConsolePrinter(private val gameManager: GameManager) {
     }
     
     private fun GameManager.printGameState() {
-        print("\u001b[2J\u001b[H") // Console Clear
-        
+		// // Move to your starting position (e.g., line 5)
+		// print("\u001b[0;1H")
+		//
+		// // Clear only your reserved lines (e.g., 15 lines)
+		// repeat(15) {
+		// 	print("\u001b[K") // Clear current line
+		// 	if (it < 14) print("\n") // Move to next line (except last)
+		// }
+		//
+		// // Move back to start and print your content
+		// print("\u001b[0;1H")
+		print("\u001b[2J")
+
         println("┌─ LOBBY (${lobby.size}) ───────────────────────────────────────────────────────────────")
         if (lobby.isEmpty()) {
             println("│  No players waiting")
@@ -35,10 +47,10 @@ class ConsolePrinter(private val gameManager: GameManager) {
                 println("│  ${player.uuid.take(8)}... - ${if (player.websocket.isActive) "CONNECTED" else "DISCONNECTED"}")
             }
         }
-        println("└─────────────────────────────────────────────────────────────────────────")
+        println("└───────────────────────────────────────────────────────────────────────────")
         println()
         
-        println("┌─ ACTIVE GAMES (${games.size}) ───────────────────────────────────────────────────────")
+        println("┌─ ACTIVE GAMES (${games.size}) ────────────────────────────────────────────────────────")
         if (games.isEmpty()) {
             println("│  No active games")
         } else {
@@ -50,13 +62,14 @@ class ConsolePrinter(private val gameManager: GameManager) {
                 } else {
                     game.value.players.forEachIndexed { index, player ->
                         val prefix = if (index == game.value.players.size - 1) "└─" else "├─"
-                        println("│    $prefix Player: ${player.uuid.take(8)}... (${if (player.websocket.isActive) "CONNECTED" else "DISCONNECTED"})")
+						val playerName = (player.name ?: "Player").take(8) + if (player.name!!.length > 8) "..." else ""
+                        println("│    $prefix ${playerName}: ${player.uuid.take(8)}... (${if (player.websocket.isActive) "CONNECTED" else "DISCONNECTED"})")
                     }
                 }
                 if (count != games.size-1) println("│")
             }
         }
-        println("└──────────────────────────────────────────────────────────────────────────")
+        println("└───────────────────────────────────────────────────────────────────────────")
         
         val totalPlayers = lobby.size + games.map{ it.value }.sumOf{ it.players.size }
         println()
@@ -64,7 +77,6 @@ class ConsolePrinter(private val gameManager: GameManager) {
 		println("Uptime: ${java.time.Duration.between(starttime, java.time.LocalTime.now()).run { 
 			String.format("%02d:%02d:%02d", toHours(), toMinutesPart(), toSecondsPart()) 
 		}}")
-        println()
     }
 }
 

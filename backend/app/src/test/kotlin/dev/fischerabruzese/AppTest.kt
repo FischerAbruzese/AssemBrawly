@@ -27,6 +27,5 @@ def solution():
 def solution():
 	return 500
 """
-        println(App().runSandboxedPython(testSolution))
     }
 }

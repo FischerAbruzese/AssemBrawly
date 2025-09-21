@@ -1,26 +1,16 @@
 package dev.fischerabruzese
 
+import dev.fischerabruzese.RecievedMessageType.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.SerializationException
+import java.util.*
 import kotlin.time.Duration.Companion.seconds
-import java.util.UUID
-import dev.fischerabruzese.*
-import dev.fischerabruzese.RecievedMessageType.*
-import kotlinx.serialization.json.jsonPrimitive
 
 val lobby = GameManager()
 val consolePrinter = ConsolePrinter(lobby)
-
 
 suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): JoinOptions? {
     return withTimeoutOrNull(timeoutMs) {
@@ -28,10 +18,11 @@ suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): J
 			when(frame.messageType()) {
                 JOIN -> {
 					val joinInfo = jsonParse<Join>((frame as Frame.Text).readText())
-					return@withTimeoutOrNull JoinOptions("join", joinInfo.gameId)
+					return@withTimeoutOrNull JoinOptions("join", joinInfo.name, joinInfo.gameId)
 				}
                 CREATE -> {
-					return@withTimeoutOrNull JoinOptions("create", null)
+					val joinInfo = jsonParse<Create>((frame as Frame.Text).readText())
+					return@withTimeoutOrNull JoinOptions("create", joinInfo.name, null)
 				}
 				RECIEVED_CODE,
                 CODE_SUBMISSION -> { 
@@ -79,6 +70,24 @@ suspend fun DefaultWebSocketServerSession.executeJoinAction(joinMessage: JoinOpt
 		}
 		else -> {}
 	}
+}
+
+suspend fun DefaultWebSocketServerSession.enterLobby(player: Player) {
+	lobby.registerPlayer(player)
+
+	val joinMessage = waitForJoinMessage(600000) 
+	// println("---Recieved Join Message from ${playerID}---")
+	if (joinMessage == null) {
+		this.close(CloseReason(1000, "timeout"))	
+	}
+	else {
+		player.name = joinMessage.name
+		executeJoinAction(joinMessage, player)
+	}
+
+	player.passWebsocketControl()
+
+	enterLobby(player)
 }
 
 suspend fun gameGarbageCollector(gameManager: GameManager) {
@@ -133,25 +142,9 @@ fun Application.configureSockets() {
 		webSocket("/2player") { 
 			val playerID = UUID.randomUUID().toString()
 			// println("---New Player Conected {$playerID}---")
-			val player = Player(playerID, this, null)
+			val player = Player(playerID, null, this, null)
 
-			lobby.registerPlayer(player)
-
-
-			val joinMessage = waitForJoinMessage(600000) 
-			// println("---Recieved Join Message from ${playerID}---")
-			if (joinMessage == null) {
-				this.close(CloseReason(1000, "timeout"))	
-			}
-			else {
-				executeJoinAction(joinMessage, player)
-			}
-
-			try {
-				player.passWebsocketControl()
-			} finally {
-				lobby.playerLeft(player)
-			}
+			enterLobby(player)
 		}
 	}
 }

@@ -4,50 +4,69 @@ import dev.fischerabruzese.RecievedMessageType.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import io.ktor.server.websocket.*
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.*
 
 @OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 class Player(
     val uuid: String,
-    val websocket: WebSocketServerSession,
+	var name: String?,
+    val websocket: DefaultWebSocketServerSession,
 	var game: Game?
 ) {
+	val gameStarted = AtomicBoolean(false)
+	val messageBox = AtomicReference<List<Frame>>(listOf())
+
 	suspend fun runIndividualGame() {
 		websocket.outgoing.send(createMessage("success", Unit))
 		delay(50)
 		websocket.outgoing.send(
-			createMessage("problem", ProblemMessage(App.riscVTestProblem.description, App.riscVTestProblem.starterCode)),
+			createMessage("opponentCode", OpponentCode(game!!.currentProblem.starterCode)),
 		)
-		websocket.outgoing.send(
-			createMessage("opponentCode", OpponentCode(App.riscVTestProblem.starterCode)),
-		)
+		for(player in game!!.players){
+			if(player == this) continue
 
-		coroutineScope {
-			launch {
-				try {
-					handleIncoming()
-				} catch (e: Exception) {
-					println("handleIncoming failed for $uuid: ${e.message}")
+			websocket.outgoing.send(
+				createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", game!!.health[player]!!, ""))
+			)
+		}
+
+		try {
+			coroutineScope {
+				launch {
+					try {
+						handleIncoming()
+					} catch (e: Exception) {
+						println("handleIncoming failed for $uuid: ${e.message}")
+					}
+				}
+				launch {
+					try {
+						pollInbox()
+					} catch (e: ReturnToLobby) {
+						throw ReturnToLobby()
+					}
+					catch (e: Exception) {
+						println("pollInbox failed for $uuid: ${e.message}")
+					}
 				}
 			}
-			launch {
-				try {
-					sendOpponentCode()
-				} catch (e: Exception) {
-					println("sendOpponentCode failed for $uuid: ${e.message}")
-				}
-			}
+		} catch (e: ReturnToLobby) {
+			return
 		}
 	}
 
-	val opponentCode = AtomicReference<Frame.Text?>(null)
-	suspend fun sendOpponentCode() {
+	private class ReturnToLobby: Throwable()
+
+	suspend fun pollInbox() {
 		while(true) {
 			delay(100)
-            val codeMessage = opponentCode.load() ?: continue
-            opponentCode.store(null)
-			websocket.send(codeMessage)
+			while(messageBox.load().isNotEmpty()) {
+				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
+				websocket.send(message)
+			}
+			if(!gameStarted.load()) {
+				throw ReturnToLobby()
+			}
 		}
 	}
 
@@ -74,13 +93,32 @@ class Player(
 					// println("---Recieved code from $uuid---\n${codeObj.code.prependIndent("\t|")}\n---")
 					try {
 						val result = App.runSandboxedRISCV(codeObj.code)
-						val success = result.trim() == App.testProblem.solution
-						val message = if(success) "" else "Incorrect Answer\n Output: ${result}"
+						val success = result.trim() == game!!.currentProblem.solution
+						val message = if(success) "Correct Answer\n Output: ${result}" else "Incorrect Answer\n Output: ${result}"
+
+						//heath update your opponent
+						if(success) {
+							for(player in game!!.players) {
+								if(player==this) continue
+								val newHealth = game!!.health[player]!!.minus(1)
+								game!!.health[player] = newHealth
+								game!!.send(listOf(player), createMessage(
+									"healthUpdate",
+									HealthUpdate(newHealth)
+								))
+							}
+						}
+						game?.sendOppInfo(this, message)
 
 						websocket.outgoing.send(createMessage(
 							"result",
 							ResultMessage(success, message)
 						))
+
+						if(success) {
+							delay(1500)
+							game!!.newProblem()
+						}
 					} catch (e: Exception) {
 						val errorMessage = ResultMessage(false, "Execution error: ${e.message}")
 						val wrappedError = WebSocketMessage("result", errorMessage)
@@ -97,9 +135,6 @@ class Player(
             }
 		}
 	}
-
-
-	val gameStarted = AtomicBoolean(false)
 
 	suspend fun passWebsocketControl() {
 		var waitTime = 0
@@ -119,16 +154,57 @@ class Game(
     val id: String,
     val players: MutableList<Player>,
 ) {
+	val health: MutableMap<Player, Int> = mutableMapOf<Player, Int>()
+	val previousProblems: MutableSet<RISCVProblem> = mutableSetOf()
+	private var problemQueue: MutableList<RISCVProblem> = PROBLEM_SET.shuffled().toMutableList()
+	lateinit var currentProblem: RISCVProblem;
+
     suspend fun play() {
+		players.forEach { health[it] = 5 }
+		newProblem()
         for (player in players) {
 			player.gameStarted.store(true)
         }
     }
 
-	suspend fun send(recievers: List<Player>, message: Frame.Text) {
+	suspend fun send(recievers: List<Player>, message: Frame) {
 		for (player in recievers) {
-			player.opponentCode.store(message)
+			player.messageBox.update{ it + message }
 		}
 	}
-}
 
+	suspend fun sendOppInfo(self: Player, console: String) {
+		for (player in players) {
+			if(player == self) continue
+
+			player.messageBox.update { it + createMessage("oppInfo", OppInfo(player.name!!, "risc-v", health[self]!!, console)) }
+		}
+	}
+
+	suspend fun newProblem() {
+		val losers = health.filter { it.value == 0 }
+		if(losers.isNotEmpty()) {
+			send(players, createMessage("gameOver", GameOver(players.find { !(it in losers) }!!.name!!)))
+			delay(1000)
+			for (player in players) {
+				player.gameStarted.store(false)
+			}
+			players.clear()
+			return
+		}
+
+		var problem = problemQueue.removeFirstOrNull()
+
+		if(problem == null) {
+			problemQueue.addAll(PROBLEM_SET.shuffled())
+			problem = problemQueue.removeFirstOrNull()
+		}
+
+		currentProblem = problem!!
+
+		send(players, createMessage(
+			"problem",
+			ProblemMessage(problem.description, problem.starterCode)
+		))
+	}
+}

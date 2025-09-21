@@ -33,3 +33,5 @@ dist-ssr
 
 backend/.idea
 backend/.kotlin/sessions
+
+backend/errors.log

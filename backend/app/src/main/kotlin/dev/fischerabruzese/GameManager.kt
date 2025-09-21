@@ -43,14 +43,6 @@ class GameManager {
         return game
     }
 
-    fun playerLeft(player: Player) {
-        val game = player.game
-
-        if (game?.players?.remove(player) != true) {
-            throw Exception("Expected player to be removed/game to exist")
-        }
-    }
-
     fun killGame(game: Game) {
         for (player in game.players) {
             player.websocket.cancel("Someone killed the game")
