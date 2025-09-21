@@ -19,6 +19,7 @@ import dev.fischerabruzese.RecievedMessageType.*
 import kotlinx.serialization.json.jsonPrimitive
 
 val lobby = GameManager()
+val consolePrinter = ConsolePrinter(lobby)
 
 
 suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): JoinOptions? {
@@ -89,16 +90,20 @@ fun Application.configureSockets() {
     }
     
     val app = App()
+
+    launch {
+        consolePrinter.startPrinting(this)
+    }
     
     routing {
 		webSocket("/2player") { 
 			val playerID = UUID.randomUUID().toString()
-			println("---New Player Conected {$playerID}---")
+			// println("---New Player Conected {$playerID}---")
 			val player = Player(playerID, this, null)
 
 
 			val joinMessage = waitForJoinMessage(600000) 
-			println("---Recieved Join Message from ${playerID}---")
+			// println("---Recieved Join Message from ${playerID}---")
 			if (joinMessage == null) {
 				this.close(CloseReason(1000, "timeout"))	
 			}

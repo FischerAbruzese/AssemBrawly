@@ -75,7 +75,7 @@ class Player(
 				}
                 CODE_SUBMISSION -> {
 					val codeObj = jsonParse<CodeSubmission>((frame as Frame.Text).readText())
-					println("---Recieved code from $uuid---\n${codeObj.code.prependIndent("\t|")}\n---")
+					// println("---Recieved code from $uuid---\n${codeObj.code.prependIndent("\t|")}\n---")
 					try {
 						val result = App.runSandboxedPython(codeObj.code)
 						val success = result.trim() == App.testProblem.solution

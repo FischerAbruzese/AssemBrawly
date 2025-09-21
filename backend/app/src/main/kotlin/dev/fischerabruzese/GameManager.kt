@@ -1,7 +1,8 @@
 package dev.fischerabruzese
 
 class GameManager {
-    private val games: HashMap<String, Game> = hashMapOf()
+    val games: HashMap<String, Game> = hashMapOf()
+    val lobby: MutableSet<Player> = mutableSetOf()
 
     fun getGame(id: String) = games[id]
 
@@ -11,10 +12,19 @@ class GameManager {
         GAME_FULL,
     }
 
+    fun registerPlayer(player: Player) {
+        lobby += player
+    }
+
     fun addPlayerToGame(
         id: String?,
         player: Player,
     ): ConnectToGame {
+        if (!(player in lobby)) {
+            throw Exception("Player was not waiting in lobby")
+        }
+        lobby -= player
+
         val game = if (id != null) games.getOrElse(id, ::newGame) else newGame()
         if (game.players.size >= 2) {
             return ConnectToGame.GAME_FULL
@@ -38,7 +48,7 @@ class GameManager {
         }
 
         if (game.players.isEmpty()) {
-            println("---PURGING GAME ${game.id}---")
+            // println("---PURGING GAME ${game.id}---")
             games.remove(game.id)
         }
     }
