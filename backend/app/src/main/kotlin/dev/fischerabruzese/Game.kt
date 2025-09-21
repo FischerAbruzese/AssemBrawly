@@ -47,13 +47,14 @@ class Player(
 
 	suspend fun pollInbox() {
 		while(true) {
-			delay(1000)
 			while(messageBox.load().isNotEmpty()) {
 				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
 				System.err.println("Sending -> ${this.name!!}: ${(message as Frame.Text).readText()}".take(80))
 				websocket.send(message)
 				delay(150)
 			}
+			websocket.send(createMessage("problem", ProblemMessage(game!!.currentProblem.description, game!!.currentProblem.starterCode)))
+
 			if(!gameStarted.load()) {
 				throw ReturnToLobby()
 			}
@@ -154,8 +155,6 @@ class Game(
 			player.gameStarted.store(true)
         }
 
-		delay(200)
-
 		players.forEach { health[it] = 5 }
 		send(players, createMessage("success", Unit))
 		newProblem()
@@ -201,9 +200,12 @@ class Game(
 
 		currentProblem = problem!!
 
-		send(players, createMessage(
-			"problem",
-			ProblemMessage(problem.description, problem.starterCode)
-		))
+		coroutineScope { 
+			delay(200)
+			send(players, createMessage(
+				"problem",
+				ProblemMessage(problem.description, problem.starterCode)
+			))
+		}
 	}
 }

@@ -6,7 +6,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "20365011073"
+    solution: "10"
 
   - description: "Given the ASCII string 'HELLO WORLD!', return the sum of all ASCII values."
     starterCode: |
@@ -20,7 +20,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "836"
+    solution: "10"
 
     #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Find the maximum value in this array: [15, 3, 27, 8, 19, 42, 11]. Return the maximum value."
@@ -36,7 +36,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "42"
+    solution: "10"
 
     #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Count how many times the character 'A' appears in the string 'BANANA'. Return the count."
@@ -51,7 +51,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "3"
+    solution: "10"
 
     #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Implement binary search to find the index of value 17 in the sorted array [2, 5, 8, 12, 17, 23, 30]. Return the index (0-based)."
@@ -68,7 +68,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "4"
+    solution: "10"
 
     #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Check if the string 'RACECAR' is a palindrome. Return 1 if true, 0 if false."
@@ -83,7 +83,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "1"
+    solution: "10"
 
   - description: "Reverse the bits of the 8-bit number 156 (10011100 in binary). Return the decimal value of the reversed bits."
     starterCode: |
@@ -94,7 +94,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "57"
+    solution: "10"
 
     #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Sort the array [64, 34, 25, 12, 22, 11, 90] in ascending order and return the element at index 3."
@@ -110,7 +110,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "25"
+    solution: "10"
 
     #REPLACE TOO EASY TO SOLVE BY HAND / HARDCODED
   - description: "Count the number of words in the string 'The quick brown fox jumps'. Words are separated by single spaces."
@@ -125,7 +125,7 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "5"
+    solution: "10"
 
   - description: "Calculate the XOR of all numbers from 1 to 16 inclusive."
     starterCode: |
@@ -134,4 +134,4 @@ problems:
           # Return a 64-bit integer in a0.
           li a0, 0
           ret
-    solution: "16"
+    solution: "10"
