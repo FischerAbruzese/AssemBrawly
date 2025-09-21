@@ -30,7 +30,7 @@ class Player(
 			if(player == this) continue
 
 			websocket.outgoing.send(
-				createMessage("oppInfo", OppInfo(player.name!!, "risc-v", game!!.health[player]!!))
+				createMessage("oppInfo", OppInfo(player.name ?: "name missing", "risc-v", game!!.health[player]!!))
 			)
 		}
 
@@ -133,10 +133,11 @@ class Game(
     val id: String,
     val players: MutableList<Player>,
 ) {
-	val health: MutableMap<Player, Int> = mutableMapOf<Player, Int>().also { map -> players.forEach { map[it] = 5 } }
+	val health: MutableMap<Player, Int> = mutableMapOf<Player, Int>()
 	val previousProblems: MutableSet<RISCVProblem> = mutableSetOf()
 
     suspend fun play() {
+		players.forEach { health[it] = 5 }
         for (player in players) {
 			player.gameStarted.store(true)
         }
@@ -152,7 +153,7 @@ class Game(
 		for (player in players) {
 			if(player == self) continue
 
-			self.messageBox.store(createMessage("offInfo", OppInfo(player.name!!, "risc-v", health[player]!!)))
+			self.messageBox.store(createMessage("oppInfo", OppInfo(player.name!!, "risc-v", health[player]!!)))
 		}
 	}
 }

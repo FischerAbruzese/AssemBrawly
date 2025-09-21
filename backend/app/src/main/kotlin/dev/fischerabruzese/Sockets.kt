@@ -122,13 +122,13 @@ fun Application.configureSockets() {
         consolePrinter.startPrinting(this)
     }
 
-	// launch {
-	// 	gameGarbageCollector(lobby)
-	// }
-	//
-	// launch {
-	// 	lobbyGarbageCollector(lobby)
-	// }
+	launch {
+		gameGarbageCollector(lobby)
+	}
+
+	launch {
+		lobbyGarbageCollector(lobby)
+	}
     
     routing {
 		webSocket("/2player") { 
