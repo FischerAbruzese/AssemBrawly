@@ -236,12 +236,12 @@ const StartPage: React.FC<StartPageProps> = ({
 
           {/* Player Name Section */}
           <div className="mb-8">
-            <div className="max-w-md mx-auto">
+            <div className="max-w-md mx-auto font-bold">
               <input
                 id="playerName"
                 type="text"
                 placeholder="Enter your name"
-                value={playerName}
+                value={playerName.toUpperCase()}
                 onChange={(e) => setPlayerName(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400 text-center"
               />
@@ -312,8 +312,8 @@ const StartPage: React.FC<StartPageProps> = ({
                     type="text"
                     placeholder="Enter game code"
                     value={gameId}
-                    onChange={(e) => setgameId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400"
+                    onChange={(e) => setGameId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-600 rounded text-sm text-center focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400"
                   />
                 </div>
               </div>
