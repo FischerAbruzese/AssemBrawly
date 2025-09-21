@@ -7,25 +7,29 @@ import java.util.concurrent.TimeUnit
 
 class App {
     companion object {
-        private fun scriptPath(file: String): String {
-            val fromEnv = System.getenv("PY_SANDBOX_DIR")
-                ?.let { Paths.get(it, file) }
-            val candidates = listOfNotNull(
-                fromEnv,
-                Paths.get("python", file),
-                Paths.get("src", "main", "python", file),
-            )
-            val hit = candidates.firstOrNull { Files.isRegularFile(it) }
-            check(hit != null) {
-                "$file not found; looked in: ${
-                    candidates.joinToString { it.toAbsolutePath().toString() }
-                }"
+        private fun sandboxPythonScriptPath(): String {
+            val path = Paths.get(
+                "src", "main", "python", "sandbox_python.py"
+            ).toAbsolutePath().normalize()
+            check(Files.isRegularFile(path)) {
+                "sandbox_python.py not found at: $path"
             }
-            return hit.toAbsolutePath().normalize().toString()
+            return path.toString()
         }
 
-        private fun sandboxPythonScriptPath() = scriptPath("sandbox_python.py")
-        private fun sandboxRISCVScriptPath() = scriptPath("sandboxed_riscv.py")
+        private fun sandboxRISCVScriptPath(): String {
+            val path = Paths.get(
+                "src", "main", "python", "sandboxed_riscv.py"
+            ).toAbsolutePath().normalize()
+            check(Files.isRegularFile(path)) {
+                "sandboxed_riscv.py not found at: $path"
+            }
+            return path.toString()
+        }
+
+        fun runSandboxedPython(code: String): String = runSandbox(sandboxPythonScriptPath(), code)
+
+        fun runSandboxedRISCV(code: String): String = runSandbox(sandboxRISCVScriptPath(), code)
 
         private fun runSandbox(scriptPath: String, code: String, timeoutSeconds: Long = 30): String {
             val process = ProcessBuilder("python3", "-u", scriptPath)
