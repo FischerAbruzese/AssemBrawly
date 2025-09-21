@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Play, Users, BookOpen, Code, Trophy, Zap, X } from "lucide-react";
+import {
+  Play,
+  Users,
+  BookOpen,
+  Code,
+  Trophy,
+  Zap,
+  X,
+  Sparkles,
+  SparklesIcon,
+} from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 import FloatingAssemblySymbols from "./FloatingAssemblySymbols";
@@ -20,6 +30,7 @@ const StartPage: React.FC<StartPageProps> = ({
   const [showToast, setShowToast] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
   const [currTypingGameId, setCurrTypingGameId] = useState("");
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const { isConnected, gameId, setGameId, requestNewGame } = webSocketProps;
 
   // Auto-hide toast after 5 seconds
@@ -48,7 +59,9 @@ const StartPage: React.FC<StartPageProps> = ({
   const handleCreateGame = () => {
     requestNewGame();
     console.log("Creating new game ...");
-    showToastMessage("Game code copied to clipboard! Share it with a friend to start a game!");
+    showToastMessage(
+      "Game code copied to clipboard! Share it with a friend to start a game!"
+    );
   };
 
   const handleJoinGame = () => {
@@ -59,6 +72,13 @@ const StartPage: React.FC<StartPageProps> = ({
         `Attempting to join game ${currTypingGameId} as ${playerName} ...`
       );
     }
+  };
+
+  const toggleAnimations = () => {
+    setAnimationsEnabled(!animationsEnabled);
+    showToastMessage(
+      `Animations ${animationsEnabled ? "disabled" : "enabled"}`
+    );
   };
 
   // Get tooltip message for Create Game button
@@ -107,7 +127,7 @@ const StartPage: React.FC<StartPageProps> = ({
     return (
       <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
         {/* Floating Symbols Background */}
-        <FloatingAssemblySymbols />
+        {animationsEnabled && <FloatingAssemblySymbols />}
 
         {/* Header */}
         <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0 relative z-10">
@@ -203,6 +223,28 @@ const StartPage: React.FC<StartPageProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Animation Toggle Button */}
+        <div className="fixed bottom-4 left-4 z-50">
+          <button
+            onClick={toggleAnimations}
+            className={`
+              p-3 rounded-full shadow-lg border transition-all duration-200
+              ${
+                animationsEnabled
+                  ? "bg-purple-600 hover:bg-purple-700 border-purple-500 text-white"
+                  : "bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300"
+              }
+            `}
+            title={
+              animationsEnabled ? "Disable animations" : "Enable animations"
+            }
+          >
+            <Sparkles
+              className={`w-5 h-5 ${animationsEnabled ? "animate-pulse" : ""}`}
+            />
+          </button>
+        </div>
       </div>
     );
   }
@@ -210,7 +252,7 @@ const StartPage: React.FC<StartPageProps> = ({
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
       {/* Floating Symbols Background */}
-      <FloatingAssemblySymbols />
+      {animationsEnabled && <FloatingAssemblySymbols />}
 
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0 relative z-10">
@@ -332,12 +374,16 @@ const StartPage: React.FC<StartPageProps> = ({
                 <button
                   onClick={handleJoinGame}
                   disabled={
-                    !currTypingGameId.trim() || !playerName.trim() || !isConnected
+                    !currTypingGameId.trim() ||
+                    !playerName.trim() ||
+                    !isConnected
                   }
                   className={`
                     w-full px-6 py-3 
                     ${
-                      !currTypingGameId.trim() || !playerName.trim() || !isConnected
+                      !currTypingGameId.trim() ||
+                      !playerName.trim() ||
+                      !isConnected
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
                     }
@@ -383,19 +429,37 @@ const StartPage: React.FC<StartPageProps> = ({
         </div>
       </div>
 
+      {/* Animation Toggle Button */}
+      <div className="fixed bottom-4 left-4 z-50">
+        <button
+          onClick={toggleAnimations}
+          className={`
+            p-3 rounded-full shadow-lg border transition-all duration-200
+            ${
+              animationsEnabled
+                ? "bg-purple-600 hover:bg-purple-700 border-purple-500 text-white"
+                : "bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300"
+            }
+          `}
+          title={animationsEnabled ? "Disable animations" : "Enable animations"}
+        >
+          <Sparkles
+            className={`w-5 h-5 ${animationsEnabled ? "animate-pulse" : ""}`}
+          />
+        </button>
+      </div>
+
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center p-4">
           <div
             className={`
-              max-w-md w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg
-              transform transition-all duration-300 ease-in-out
-              ${
-                showToast
-                  ? "translate-y-0 opacity-100"
-                  : "translate-y-full opacity-0"
-              }
-            `}
+        max-w-md w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg
+        transform transition-all duration-300 ease-in-out
+        ${
+          showToast ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+        }
+      `}
           >
             <div className="p-4 flex items-center justify-between">
               <p className="text-gray-100 text-sm font-medium pr-4">
