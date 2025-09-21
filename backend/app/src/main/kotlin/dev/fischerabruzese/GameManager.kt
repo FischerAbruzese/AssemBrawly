@@ -1,7 +1,11 @@
 package dev.fischerabruzese
 
+import kotlinx.coroutines.cancel
+import java.util.UUID
+
 class GameManager {
-    private val games: HashMap<String, Game> = hashMapOf()
+    val games: HashMap<String, Game> = hashMapOf()
+    val lobby: MutableSet<Player> = mutableSetOf()
 
     fun getGame(id: String) = games[id]
 
@@ -11,22 +15,46 @@ class GameManager {
         GAME_FULL,
     }
 
+    fun registerPlayer(player: Player) {
+        lobby += player
+    }
+
     fun addPlayerToGame(
-        id: String,
+        id: String?,
         player: Player,
     ): ConnectToGame {
-        val game = games.getOrElse(id, ::newGame)
+        if (!(player in lobby)) {
+            throw Exception("Player was not waiting in lobby")
+        }
+        lobby -= player
+
+        val game = if (id != null) games.getOrElse(id, ::newGame) else newGame()
         if (game.players.size >= 2) {
             return ConnectToGame.GAME_FULL
         }
-
         game.players.add(player)
+        player.game = game
         return if (game.players.size == 2) ConnectToGame.SUCCESS else ConnectToGame.NOT_ENOUGH_PLAYERS
     }
 
     private fun newGame(): Game {
-        val game = Game(games.size.toString(), mutableListOf())
+        val game = Game(UUID.randomUUID().toString().take(6), mutableListOf())
         games[game.id] = game
         return game
+    }
+
+    fun playerLeft(player: Player) {
+        val game = player.game
+
+        if (game?.players?.remove(player) != true) {
+            throw Exception("Expected player to be removed/game to exist")
+        }
+    }
+
+    fun killGame(game: Game) {
+        for (player in game.players) {
+            player.websocket.cancel("Someone killed the game")
+        }
+        games.remove(game.id)
     }
 }
