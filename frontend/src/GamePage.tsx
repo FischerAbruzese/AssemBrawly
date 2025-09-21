@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Play, Menu, Heart } from "lucide-react";
 import type { WebSocketProps } from "./WebSocket";
 import { runningRunResponse } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 import type { Player, GameRunningState } from "./App";
 import RiscVCheatSheet from "./RiscVCheatSheet";
-import { useConsoleFlash } from './useConsoleFlash'; // adjust path as needed
+import { useConsoleFlash } from "./useConsoleFlash"; // adjust path as needed
 
 interface GamePageProps {
   setGameRunning: (gameRunning: GameRunningState) => void;
@@ -99,6 +99,15 @@ const GamePage: React.FC<GamePageProps> = ({
   const [leftCodeHeight, setLeftCodeHeight] = useState(60); // percentage of left panel
   const [centerProblemHeight, setCenterProblemHeight] = useState(50); // percentage of center panel
   const [rightCodeHeight, setRightCodeHeight] = useState(60); // percentage of right panel
+  const [problemFlashState, setProblemFlashState] = useState("none");
+
+  useEffect(() => {
+    if (problem.description) {
+      setProblemFlashState("flash");
+      const timer = setTimeout(() => setProblemFlashState("none"), 700);
+      return () => clearTimeout(timer);
+    }
+  }, [problem.description]);
 
   const maxHearts = 5;
 
@@ -189,7 +198,7 @@ const GamePage: React.FC<GamePageProps> = ({
   };
 
   // Vertical heart column component
-  const HeartColumn: React.FC<{ count: number; side: "left" | "right" }> = ({
+  const HeartColumn: React.FC<{ side: "left" | "right" }> = ({
     side,
   }) => {
     const heartsToDisplay = side === "left" ? userHealth : opponentHealth;
@@ -216,7 +225,8 @@ const GamePage: React.FC<GamePageProps> = ({
   };
 
   const { flashClasses: userFlashClasses } = useConsoleFlash(userConsole);
-  const { flashClasses: opponentFlashClasses } = useConsoleFlash(opponentConsole);
+  const { flashClasses: opponentFlashClasses } =
+    useConsoleFlash(opponentConsole);
 
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
@@ -333,7 +343,13 @@ const GamePage: React.FC<GamePageProps> = ({
               <div className="bg-gray-700 px-4 py-2 border-b border-gray-600 flex-shrink-0">
                 <h3 className="text-sm font-medium text-gray-200">Problem</h3>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 text-sm min-h-0">
+              <div
+                className={`flex-1 overflow-y-auto p-4 text-sm min-h-0 transition-all duration-1000 ease-in-out ${
+                  problemFlashState === "flash"
+                    ? "bg-purple-800 shadow-lg shadow-purple-500/20"
+                    : "bg-transparent"
+                }`}
+              >
                 <p className="mb-4 text-gray-300">{problem.description}</p>
               </div>
             </div>

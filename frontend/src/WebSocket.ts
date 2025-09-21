@@ -71,9 +71,7 @@ export const useWebSocket = (
     const currentHealth = opponentHealthRef.current;
     if (currentHealth > 0) {
       setOpponentHealth(currentHealth - 1);
-      return false;
     }
-    return true;
   };
 
   //WebSocket management
@@ -103,9 +101,7 @@ export const useWebSocket = (
             console.log("Result: ", data.data);
             setUserConsole(data.data.message);
             if (data.data.success) {
-              if (decrementOpponentHealth()){
-                setGameRunning(userName);
-              }
+              decrementOpponentHealth()
             }
             break;
           case "success":
@@ -141,6 +137,12 @@ export const useWebSocket = (
           case "healthUpdate":
             console.log("Health update: ", data.data);
             setUserHealth(data.data.newHealth);
+            break;
+          case "gameOver":
+            console.log("Game over: ", data.data.winner);
+            setGameRunning(data.data.winner);
+            setGameId("");
+            setProblem(blankProblem);
             break;
         }
       } catch (error) {
