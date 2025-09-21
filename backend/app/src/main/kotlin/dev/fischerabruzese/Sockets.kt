@@ -1,24 +1,13 @@
 package dev.fischerabruzese
 
+import dev.fischerabruzese.RecievedMessageType.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.SerializationException
+import java.util.*
 import kotlin.time.Duration.Companion.seconds
-import java.util.UUID
-import dev.fischerabruzese.*
-import dev.fischerabruzese.RecievedMessageType.*
-import kotlinx.serialization.json.jsonPrimitive
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 val lobby = GameManager()
 val consolePrinter = ConsolePrinter(lobby)

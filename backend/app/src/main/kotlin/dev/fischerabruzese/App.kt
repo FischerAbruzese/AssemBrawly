@@ -27,6 +27,10 @@ class App {
             return path.toString()
         }
 
+        fun runSandboxedPython(code: String): String = runSandbox(sandboxPythonScriptPath(), code)
+
+        fun runSandboxedRISCV(code: String): String = runSandbox(sandboxRISCVScriptPath(), code)
+
         private fun runSandbox(scriptPath: String, code: String, timeoutSeconds: Long = 30): String {
             val process = ProcessBuilder("python3", "-u", scriptPath)
                 .redirectErrorStream(true)
@@ -52,35 +56,6 @@ class App {
 
             return output.trimEnd('\r', '\n')
         }
-
-        fun runSandboxedPython(code: String): String = runSandbox(sandboxPythonScriptPath(), code)
-
-        fun runSandboxedRISCV(code: String): String {
-            println("---Running RISC-V---\n$code\n---")
-            val output = runSandbox(sandboxRISCVScriptPath(), code)
-            println("---OUTPUT---\n$output\n---")
-            return output
-        }
-
-        val testProblem = PythonProblem(
-            description = "Return the sum of the first 50 fib numbers. The first 3 fib numbers are 0 1 1.",
-            starterCode = "def solution():\n\treturn 0",
-            // If you want correctness: "20365011073". If it's a placeholder, keep "500".
-            solution = "500",
-        )
-
-        val riscVTestProblem = RISCVProblem(
-            description = "Return the sum of the first 50 fib numbers. The first 3 fib numbers are 0 1 1.",
-            starterCode = """
-solution:
-    # Return a 64-bit integer in a0.
-    # Leaf function example (no calls needed). Place result in a0.
-    li a0, 0
-    ret
-""".trimIndent(),
-            // Same note as above about the expected answer.
-            solution = "500",
-        )
     }
 }
 

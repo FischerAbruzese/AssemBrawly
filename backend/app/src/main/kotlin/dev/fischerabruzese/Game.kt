@@ -4,8 +4,7 @@ import dev.fischerabruzese.RecievedMessageType.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import io.ktor.server.websocket.*
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.*
 
 @OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 class Player(
@@ -15,16 +14,13 @@ class Player(
 	var game: Game?
 ) {
 	val gameStarted = AtomicBoolean(false)
-	val messageBox = AtomicReference<Frame.Text?>(null)
+	val messageBox = AtomicReference<List<Frame.Text>>(listOf())
 
 	suspend fun runIndividualGame() {
 		websocket.outgoing.send(createMessage("success", Unit))
 		delay(50)
 		websocket.outgoing.send(
-			createMessage("problem", ProblemMessage(App.riscVTestProblem.description, App.riscVTestProblem.starterCode)),
-		)
-		websocket.outgoing.send(
-			createMessage("opponentCode", OpponentCode(App.riscVTestProblem.starterCode)),
+			createMessage("opponentCode", OpponentCode(game!!.currentProblem.starterCode)),
 		)
 		for(player in game!!.players){
 			if(player == this) continue
@@ -55,9 +51,10 @@ class Player(
 	suspend fun pollInbox() {
 		while(true) {
 			delay(100)
-            val codeMessage = messageBox.load() ?: continue
-            messageBox.store(null)
-			websocket.send(codeMessage)
+			while(messageBox.load().isNotEmpty()) {
+				val message = messageBox.fetchAndUpdate { it.drop(1) }.first()
+				websocket.send(message)
+			}
 		}
 	}
 
@@ -84,11 +81,11 @@ class Player(
 					// println("---Recieved code from $uuid---\n${codeObj.code.prependIndent("\t|")}\n---")
 					try {
 						val result = App.runSandboxedRISCV(codeObj.code)
-						val success = result.trim() == App.testProblem.solution
-						val message = if(success) "" else "Incorrect Answer\n Output: ${result}"
+						val success = result.trim() == game!!.currentProblem.solution
+						val message = if(success) "Correct Answer\n Output: ${result}" else "Incorrect Answer\n Output: ${result}"
 
+						//heath update your opponent
 						if(success) {
-							//heath update your opponent
 							for(player in game!!.players) {
 								if(player==this) continue
 								val newHealth = game!!.health[player]!!.minus(1)
@@ -99,13 +96,17 @@ class Player(
 								))
 							}
 						}
-						//send your opps info about your console updates
 						game?.sendOppInfo(this, message)
 
 						websocket.outgoing.send(createMessage(
 							"result",
 							ResultMessage(success, message)
 						))
+
+						if(success) {
+							delay(3000)
+							game!!.newProblem()
+						}
 					} catch (e: Exception) {
 						val errorMessage = ResultMessage(false, "Execution error: ${e.message}")
 						val wrappedError = WebSocketMessage("result", errorMessage)
@@ -122,8 +123,6 @@ class Player(
             }
 		}
 	}
-
-
 
 	suspend fun passWebsocketControl() {
 		var waitTime = 0
@@ -145,9 +144,12 @@ class Game(
 ) {
 	val health: MutableMap<Player, Int> = mutableMapOf<Player, Int>()
 	val previousProblems: MutableSet<RISCVProblem> = mutableSetOf()
+	private var problemQueue: MutableList<RISCVProblem> = PROBLEM_SET.shuffled().toMutableList()
+	lateinit var currentProblem: RISCVProblem;
 
     suspend fun play() {
 		players.forEach { health[it] = 5 }
+		newProblem()
         for (player in players) {
 			player.gameStarted.store(true)
         }
@@ -155,7 +157,7 @@ class Game(
 
 	suspend fun send(recievers: List<Player>, message: Frame.Text) {
 		for (player in recievers) {
-			player.messageBox.store(message)
+			player.messageBox.update{ it + message }
 		}
 	}
 
@@ -163,7 +165,23 @@ class Game(
 		for (player in players) {
 			if(player == self) continue
 
-			self.messageBox.store(createMessage("oppInfo", OppInfo(player.name!!, "risc-v", health[player]!!, console)))
+			player.messageBox.update { it + createMessage("oppInfo", OppInfo(player.name!!, "risc-v", health[self]!!, console)) }
 		}
+	}
+
+	suspend fun newProblem() {
+		val problem = problemQueue.removeFirstOrNull()
+
+		if(problem == null) {
+			problemQueue = PROBLEM_SET.shuffled().toMutableList()
+			newProblem()
+		}
+
+		currentProblem = problem!!
+
+		send(players, createMessage(
+			"problem",
+			ProblemMessage(problem.description, problem.starterCode)
+		))
 	}
 }

@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
+    implementation("com.charleskorn.kaml:kaml:0.55.0")
     testImplementation(libs.ktor.server.test.host)
 
     // This dependency is used by the application.
