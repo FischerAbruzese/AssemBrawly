@@ -12,17 +12,16 @@ import {
 import type { WebSocketProps } from "./WebSocket";
 import ConnectionStatusIndicator from "./ConnectionStatusIndicator";
 import FloatingAssemblySymbols from "./FloatingAssemblySymbols";
+import type { Player } from "./App";
 
 interface StartPageProps {
   webSocketProps: WebSocketProps;
-  playerName: string;
-  setPlayerName: (playerName: string) => void;
+  user: Player;
 }
 
 const StartPage: React.FC<StartPageProps> = ({
   webSocketProps,
-  playerName,
-  setPlayerName,
+  user,
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -31,6 +30,19 @@ const StartPage: React.FC<StartPageProps> = ({
   const [currTypingGameId, setCurrTypingGameId] = useState("");
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const { isConnected, gameId, setGameId, requestNewGame } = webSocketProps;
+
+  const {
+    playerCode: userCode,
+    playerConsole: userConsole,
+    playerHealth: userHealth,
+    playerLanguage: userLanguage,
+    playerName: userName,
+    setPlayerCode: setUserCode,
+    setPlayerConsole: setUserConsole,
+    setPlayerHealth: setUserHealth,
+    setPlayerLanguage: setPlayerLanguage,
+    setPlayerName: setUserName,
+  } = user;
 
   // Auto-hide toast after 5 seconds
   useEffect(() => {
@@ -55,20 +67,30 @@ const StartPage: React.FC<StartPageProps> = ({
     setTimeout(() => setToastMessage(""), 300);
   };
 
-  const handleCreateGame = () => {
-    requestNewGame();
-    console.log("Creating new game ...");
-    showToastMessage(
-      "Game code copied to clipboard! Share it with a friend to start a game!"
-    );
-  };
+  const handleCreateGame = async () => {
+  requestNewGame();
+  console.log("Creating new game ...");
+
+  if (gameId) {
+    try {
+      await navigator.clipboard.writeText(gameId);
+      console.log('Copied the game id: ' + gameId);
+      showToastMessage(
+        "Game code copied to clipboard! Share it with a friend to start a game!"
+      );
+    } catch (err) {
+      console.error('Error in copying text: ', err);
+    }
+  }
+};
+
 
   const handleJoinGame = () => {
-    if (currTypingGameId.trim() && playerName.trim()) {
+    if (currTypingGameId.trim() && userName.trim()) {
       setGameId(currTypingGameId.trim());
-      console.log(`Joining game ${currTypingGameId} as ${playerName}`);
+      console.log(`Joining game ${currTypingGameId} as ${userName}`);
       showToastMessage(
-        `Attempting to join game ${currTypingGameId} as ${playerName} ...`
+        `Attempting to join game ${currTypingGameId} as ${userName} ...`
       );
     }
   };
@@ -83,14 +105,14 @@ const StartPage: React.FC<StartPageProps> = ({
   // Get tooltip message for Create Game button
   const getCreateGameTooltip = () => {
     if (!isConnected) return "Connect to server to create a game";
-    if (!playerName.trim()) return "Enter your name to create a game";
+    if (!userName.trim()) return "Enter your name to create a game";
     return null;
   };
 
   // Get tooltip message for Join Game button
   const getJoinGameTooltip = () => {
     if (!isConnected) return "Connect to server to join a game";
-    if (!playerName.trim()) return "Enter your name to join a game";
+    if (!userName.trim()) return "Enter your name to join a game";
     if (!currTypingGameId.trim()) return "Enter a game code to join";
     return null;
   };
@@ -289,8 +311,8 @@ const StartPage: React.FC<StartPageProps> = ({
                 id="playerName"
                 type="text"
                 placeholder="Enter your name"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400 text-center"
               />
             </div>
@@ -318,11 +340,11 @@ const StartPage: React.FC<StartPageProps> = ({
               >
                 <button
                   onClick={handleCreateGame}
-                  disabled={!isConnected || !playerName.trim()}
+                  disabled={!isConnected || !userName.trim()}
                   className={`
                     w-full px-6 py-3 
                     ${
-                      !isConnected || !playerName.trim()
+                      !isConnected || !userName.trim()
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-green-600 hover:bg-green-700 text-white font-medium"
                     }
@@ -374,14 +396,14 @@ const StartPage: React.FC<StartPageProps> = ({
                   onClick={handleJoinGame}
                   disabled={
                     !currTypingGameId.trim() ||
-                    !playerName.trim() ||
+                    !userName.trim() ||
                     !isConnected
                   }
                   className={`
                     w-full px-6 py-3 
                     ${
                       !currTypingGameId.trim() ||
-                      !playerName.trim() ||
+                      !userName.trim() ||
                       !isConnected
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
