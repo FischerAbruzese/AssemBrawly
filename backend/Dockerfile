@@ -1,24 +1,21 @@
-# Use a small, stable base image
-FROM debian:stable-slim
+# Java 21 (LTS) runtime on Debian slim
+FROM eclipse-temurin:21-jre-jammy
 
-# Install bash and any common utilities your script might need.
-# Add more packages as required by your script (e.g., curl, git, openssh-client, jq).
+# Install common tools your script may need; add more as required (curl, git, jq, unzip, bash)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash ca-certificates coreutils curl jq git \
+    bash curl git jq ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy your project files (adjust as needed)
+# Copy project files
 COPY . /app
 
 # Ensure the script is executable
 RUN chmod +x ./deploy_backend.sh
 
-# If the script needs environment variables, set them here or pass at runtime
-# ENV FOO=bar
+# Environment variables for Java (optional tunings)
+# ENV JAVA_OPTS="-Xms256m -Xmx1g"
 
-# Run the script as the container's main process
-# If your script needs bash features, ensure /bin/bash is used.
+# Run the deployment script
 CMD ["/bin/bash", "-c", "./deploy_backend.sh"]
