@@ -19,7 +19,7 @@ const StartPage: React.FC<StartPageProps> = ({
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
-
+  const [currTypingGameId, setCurrTypingGameId] = useState("");
   const { isConnected, gameId, setGameId, requestNewGame } = webSocketProps;
 
   // Auto-hide toast after 5 seconds
@@ -47,16 +47,16 @@ const StartPage: React.FC<StartPageProps> = ({
 
   const handleCreateGame = () => {
     requestNewGame();
-    console.log("Creating new game");
-    showToastMessage("Creating new game ...");
+    console.log("Creating new game ...");
+    showToastMessage("Game code copied to clipboard! Share it with a friend to start a game!");
   };
 
   const handleJoinGame = () => {
-    if (gameId.trim() && playerName.trim()) {
-      setGameId(gameId.trim());
-      console.log(`Joining game ${gameId} as ${playerName}`);
+    if (currTypingGameId.trim() && playerName.trim()) {
+      setGameId(currTypingGameId.trim());
+      console.log(`Joining game ${currTypingGameId} as ${playerName}`);
       showToastMessage(
-        `Attempting to join game ${gameId} as ${playerName} ...`
+        `Attempting to join game ${currTypingGameId} as ${playerName} ...`
       );
     }
   };
@@ -72,7 +72,7 @@ const StartPage: React.FC<StartPageProps> = ({
   const getJoinGameTooltip = () => {
     if (!isConnected) return "Connect to server to join a game";
     if (!playerName.trim()) return "Enter your name to join a game";
-    if (!gameId.trim()) return "Enter a game code to join";
+    if (!currTypingGameId.trim()) return "Enter a game code to join";
     return null;
   };
 
@@ -108,7 +108,7 @@ const StartPage: React.FC<StartPageProps> = ({
       <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
         {/* Floating Symbols Background */}
         <FloatingAssemblySymbols />
-        
+
         {/* Header */}
         <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0 relative z-10">
           <div className="flex items-center justify-center">
@@ -211,17 +211,17 @@ const StartPage: React.FC<StartPageProps> = ({
     <div className="fixed inset-0 bg-gray-900 flex flex-col overflow-hidden">
       {/* Floating Symbols Background */}
       <FloatingAssemblySymbols />
-      
+
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-600 px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0 relative z-10">
         <div className="flex items-center justify-center">
-            <img
-              src="/x86.svg"
-              alt="X86 Assembly Language"
-              className="w-12 h-12 cursor-pointer"
-              onClick={() => setShowTutorial(false)}
-            />
-          </div>
+          <img
+            src="/x86.svg"
+            alt="X86 Assembly Language"
+            className="w-12 h-12 cursor-pointer"
+            onClick={() => setShowTutorial(false)}
+          />
+        </div>
         <h1 className="text-2xl font-bold text-gray-100">Assembrawly</h1>
         <ConnectionStatusIndicator isConnected={isConnected} />
       </header>
@@ -243,7 +243,7 @@ const StartPage: React.FC<StartPageProps> = ({
 
           {/* Player Name Section */}
           <div className="mb-8">
-            <div className="max-w-md mx-auto font-bold">
+            <div className="max-w-md mx-auto font-bold text-lg">
               <input
                 id="playerName"
                 type="text"
@@ -318,8 +318,8 @@ const StartPage: React.FC<StartPageProps> = ({
                   <input
                     type="text"
                     placeholder="Enter game code"
-                    value={gameId}
-                    onChange={(e) => setGameId(e.target.value)}
+                    value={currTypingGameId}
+                    onChange={(e) => setCurrTypingGameId(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-600 rounded text-sm text-center focus:outline-none focus:border-blue-500 bg-gray-700 text-gray-100 placeholder-gray-400"
                   />
                 </div>
@@ -332,12 +332,12 @@ const StartPage: React.FC<StartPageProps> = ({
                 <button
                   onClick={handleJoinGame}
                   disabled={
-                    !gameId.trim() || !playerName.trim() || !isConnected
+                    !currTypingGameId.trim() || !playerName.trim() || !isConnected
                   }
                   className={`
                     w-full px-6 py-3 
                     ${
-                      !gameId.trim() || !playerName.trim() || !isConnected
+                      !currTypingGameId.trim() || !playerName.trim() || !isConnected
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
                     }
