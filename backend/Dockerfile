@@ -29,8 +29,11 @@ WORKDIR /app
 # Copy the installed application (scripts + libs + resources)
 COPY --from=build /src/app/build/install/app /app
 
+RUN ls -la app/src/main || true
+RUN ls -la app/src/main/python || true
+
 # Copy your sandbox scripts into a fixed location
-COPY src/main/python /app/python
+COPY app/src/main/python /app/python
 RUN chmod -R a+r /app/python
 
 # Allow the app to locate the sandbox scripts in production
