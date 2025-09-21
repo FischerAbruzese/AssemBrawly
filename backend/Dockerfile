@@ -1,21 +1,44 @@
-# Java 21 (LTS) runtime on Debian slim
-FROM eclipse-temurin:21-jdk-jammy
+# ---- Build stage ----
+FROM eclipse-temurin:21-jdk-jammy AS build
 
-# Install common tools your script may need; add more as required (curl, git, jq, unzip, bash)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash curl git jq ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+    python3 python3-venv python3-pip \
+    qemu-user \
+    gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu \
+    curl git jq ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . .
+ENV GRADLE_USER_HOME=/src/.gradle
+# Build the app distribution (subproject ":app")
+RUN ./gradlew --no-daemon :app:installDist
+
+# ---- Runtime stage ----
+FROM eclipse-temurin:21-jre-jammy AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    qemu-user \
+    gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu \
+    ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy project files
-COPY . /app
+# Copy the installed application (scripts + libs + resources)
+COPY --from=build /src/app/build/install/app /app
 
-# Ensure the script is executable
-RUN chmod +x ./deploy_backend.sh
+# Copy your sandbox scripts into a fixed location
+COPY src/main/python /app/python
+RUN chmod -R a+r /app/python
 
-# Environment variables for Java (optional tunings)
-# ENV JAVA_OPTS="-Xms256m -Xmx1g"
+# Allow the app to locate the sandbox scripts in production
+ENV PY_SANDBOX_DIR=/app/python
 
-# Run the deployment script
-CMD ["/bin/bash", "-c", "./deploy_backend.sh"]
+# Help Render detect the service; Ktor should bind 0.0.0.0:${PORT}
+ENV PORT=8080
+EXPOSE 8080
+
+# Run the app directly (no Gradle)
+CMD ["/app/bin/app"]

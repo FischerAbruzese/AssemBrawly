@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-./docker_config.sh
-./gradlew run --no-daemon
+set -euo pipefail
+exec /app/bin/bash
