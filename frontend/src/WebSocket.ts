@@ -1,18 +1,5 @@
 import { useState, useEffect } from "react";
-
-export interface Problem {
-  description: string;
-  starterCode: string;
-}
-
-export interface RunResponse {
-  message: string;
-  success: boolean;
-}
-
-export interface Information {
-	message: string;
-}
+import type { Problem, RunResponse } from "./WebSocketInterfaces.ts";
 
 const blankProblem: Problem = {
   description: "",
@@ -24,16 +11,43 @@ const blankRunResponse: RunResponse = {
   success: false,
 };
 
-export const useWebSocket = (connectionLocation: string) => {
+export const runningRunResponse: RunResponse = {
+  message: "Running...",
+  success: false,
+};
+
+export interface WebSocketProps {
+  isConnected: boolean;
+  problem: Problem;
+  userCode: string;
+  serverRunResponse: RunResponse;
+  gameId: string;
+  submitCode: () => void;
+  setUserCode: (code: string) => void;
+  setProblem: (problem: Problem) => void;
+  setServerRunResponse: (runResponse: RunResponse) => void;
+  setGameId: (gameId: string) => void;
+  requestNewGame: () => void;
+  syncUserCode: (code: string) => void;
+}
+export const useWebSocket = (
+  connectionLocation: string,
+  setGameRunning : (gameRunning: boolean) => void,
+  setOpponentCode : (opponentCode: string) => void,
+  setOpponentConsole : (opponentConsole: string) => void,
+) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [problem, setProblem] = useState<Problem>(blankProblem);
   const [userCode, setUserCode] = useState<string>("");
-  const [serverRunResponse, setServerRunResponse] = useState<RunResponse>(blankRunResponse);
+  const [serverRunResponse, setServerRunResponse] =
+    useState<RunResponse>(blankRunResponse);
+  const [gameId, setGameId] = useState("");
 
+  //WebSocket management
   useEffect(() => {
     const ws = new WebSocket(connectionLocation);
-    
+
     ws.onopen = () => {
       console.log("Connected to WebSocket");
       setIsConnected(true);
@@ -53,10 +67,29 @@ export const useWebSocket = (connectionLocation: string) => {
             console.log("RESULT", data.data);
             setServerRunResponse(data.data);
             break;
-		  case "info":
-			console.log("INFO", data.data.information)
-			//display info to user
-			break;
+          case "success":
+            setGameRunning(true);
+            break;
+          case "not enough players":
+            break;
+          case "game full":
+            break;
+          case "created game":
+            setGameId(data.data.id);
+            navigator.clipboard.writeText(gameId).then(function() {
+              console.log('Copied the game id: ' + gameId);
+            }).catch(function(err) {
+              console.error('Error in copying text: ', err);
+            });
+            break;
+          case "opponentCode":
+            console.log("OPPOWNENT CODE", data.data.code);
+            setOpponentCode(data.data.code);
+            break;
+          case "opponentConsole":
+            console.log("OPPOWNENT CONSOLE", data.data.console);
+            setOpponentConsole(data.data.console);
+            break;
         }
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -75,17 +108,38 @@ export const useWebSocket = (connectionLocation: string) => {
     return () => {
       ws.close();
     };
-  }, [connectionLocation]);
+  }, [connectionLocation, setGameRunning, setOpponentCode, setOpponentConsole]);
 
-  const submitCode = () => {
+  const requestNewGame = () => {
     if (socket) {
-      socket.send(JSON.stringify({ type: "usercode", code: userCode }));
+      socket.send(JSON.stringify({ type: "create" }));
     }
   };
 
-  const sendMessage = (message: "string") => {
+  //Joining a game
+  useEffect(() => {
+    if (socket && gameId != "") {
+      socket.send(JSON.stringify({ type: "join", data: { gameId: gameId } }));
+    }
+  }, [socket, gameId]);
+
+  //Leaving a game
+  //setGameRunning
+
+  const submitCode = () => {
     if (socket) {
-      socket.send(JSON.stringify(message));
+      setServerRunResponse(runningRunResponse);
+      socket.send(
+        JSON.stringify({ type: "submitUserCode", data: { code: userCode } })
+      );
+    }
+  };
+
+  const syncUserCode = (code: string) => {
+    if (socket) {
+      socket.send(
+        JSON.stringify({ type: "userCode", data: { code: code } })
+      );
     }
   };
 
@@ -95,12 +149,15 @@ export const useWebSocket = (connectionLocation: string) => {
     problem,
     userCode,
     serverRunResponse,
-    
+    gameId,
+
     // Methods
     submitCode,
-    sendMessage,
     setUserCode,
     setProblem,
     setServerRunResponse,
+    setGameId,
+    requestNewGame,
+    syncUserCode
   };
 };

@@ -1,0 +1,119 @@
+mov eax, ebx
+add eax, 10
+sub ebx, eax
+mul ecx
+div edx
+inc eax
+dec ebx
+push eax
+pop ebx
+call function_name
+ret
+jmp label_name
+je equal_label
+jne not_equal_label
+jg greater_label
+jl less_label
+jge greater_equal_label
+jle less_equal_label
+cmp eax, ebx
+test eax, eax
+and eax, 0xff
+or ebx, 0x100
+xor ecx, ecx
+not edx
+shl eax, 2
+shr ebx, 1
+sal ecx, 3
+sar edx, 2
+rol eax, 4
+ror ebx, 3
+lea eax, [ebx + ecx*2 + 8]
+movzx eax, bl
+movsx ebx, cl
+xchg eax, ebx
+nop
+hlt
+int 0x21
+cli
+sti
+pushf
+popf
+lahf
+sahf
+cdq
+cwd
+cbw
+cwde
+lodsb
+lodsw
+lodsd
+stosb
+stosw
+stosd
+movsb
+movsw
+movsd
+cmpsb
+cmpsw
+cmpsd
+scasb
+scasw
+scasd
+rep movsb
+repz cmpsb
+repnz scasb
+adc eax, ebx
+sbb ecx, edx
+neg eax
+imul eax, ebx
+idiv ecx
+setne al
+sete bl
+setg cl
+movbe eax, [ebx]
+bswap eax
+cpuid
+rdtsc
+enter 16, 0
+leave
+pusha
+popa
+pushad
+popad
+in al, dx
+out dx, al
+xlat
+aaa
+aad
+aam
+aas
+daa
+das
+bound eax, [mem_bounds]
+arpl ax, bx
+lar eax, ebx
+lsl ecx, edx
+verr ax
+verw bx
+sgdt [gdt_descriptor]
+sidt [idt_descriptor]
+lgdt [gdt_descriptor]
+lidt [idt_descriptor]
+sldt ax
+str bx
+lldt cx
+ltr dx
+clts
+invd
+wbinvd
+invlpg [mem_page]
+lock add [mem_location], eax
+xadd [mem_location], ebx
+cmpxchg [mem_location], ecx
+bts eax, 5
+btr ebx, 7
+btc ecx, 3
+bt edx, 12
+bsf eax, ebx
+bsr ecx, edx
