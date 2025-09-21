@@ -45,10 +45,18 @@ data class CodeSubmission(
 @Serializable
 data class Join(
     val gameId: String,
+	val name: String,
 )
+
+@Serializable
+data class Create(
+	val name: String,
+)
+
 
 data class JoinOptions(
     val action: String,
+	val name: String,
     val gameId: String?,
 )
 
@@ -64,8 +72,9 @@ data class OpponentCode(
 
 @Serializable
 data class OppInfo(
-	val name: String ,
+	val name: String,
 	val language: String,
+	val health: Int,
 )
 
 @Serializable

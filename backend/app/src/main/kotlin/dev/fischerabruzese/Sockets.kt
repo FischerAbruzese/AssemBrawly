@@ -28,10 +28,11 @@ suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): J
 			when(frame.messageType()) {
                 JOIN -> {
 					val joinInfo = jsonParse<Join>((frame as Frame.Text).readText())
-					return@withTimeoutOrNull JoinOptions("join", joinInfo.gameId)
+					return@withTimeoutOrNull JoinOptions("join", joinInfo.name, joinInfo.gameId)
 				}
                 CREATE -> {
-					return@withTimeoutOrNull JoinOptions("create", null)
+					val joinInfo = jsonParse<Create>((frame as Frame.Text).readText())
+					return@withTimeoutOrNull JoinOptions("create", joinInfo.name, null)
 				}
 				RECIEVED_CODE,
                 CODE_SUBMISSION -> { 
@@ -121,22 +122,21 @@ fun Application.configureSockets() {
         consolePrinter.startPrinting(this)
     }
 
-	launch {
-		gameGarbageCollector(lobby)
-	}
-
-	launch {
-		lobbyGarbageCollector(lobby)
-	}
+	// launch {
+	// 	gameGarbageCollector(lobby)
+	// }
+	//
+	// launch {
+	// 	lobbyGarbageCollector(lobby)
+	// }
     
     routing {
 		webSocket("/2player") { 
 			val playerID = UUID.randomUUID().toString()
 			// println("---New Player Conected {$playerID}---")
-			val player = Player(playerID, this, null)
+			val player = Player(playerID, null, this, null)
 
 			lobby.registerPlayer(player)
-
 
 			val joinMessage = waitForJoinMessage(600000) 
 			// println("---Recieved Join Message from ${playerID}---")
@@ -144,6 +144,7 @@ fun Application.configureSockets() {
 				this.close(CloseReason(1000, "timeout"))	
 			}
 			else {
+				player.name = joinMessage.name
 				executeJoinAction(joinMessage, player)
 			}
 

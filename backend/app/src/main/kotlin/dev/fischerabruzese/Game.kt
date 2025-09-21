@@ -10,9 +10,13 @@ import kotlin.concurrent.atomics.AtomicReference
 @OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 class Player(
     val uuid: String,
+	var name: String?,
     val websocket: WebSocketServerSession,
 	var game: Game?
 ) {
+	val gameStarted = AtomicBoolean(false)
+	val messageBox = AtomicReference<Frame.Text?>(null)
+
 	suspend fun runIndividualGame() {
 		websocket.outgoing.send(createMessage("success", Unit))
 		delay(50)
@@ -22,6 +26,13 @@ class Player(
 		websocket.outgoing.send(
 			createMessage("opponentCode", OpponentCode(App.riscVTestProblem.starterCode)),
 		)
+		for(player in game!!.players){
+			if(player == this) continue
+
+			websocket.outgoing.send(
+				createMessage("oppInfo", OppInfo(player.name!!, "risc-v", game!!.health[player]!!))
+			)
+		}
 
 		coroutineScope {
 			launch {
@@ -33,20 +44,19 @@ class Player(
 			}
 			launch {
 				try {
-					sendOpponentCode()
+					pollInbox()
 				} catch (e: Exception) {
-					println("sendOpponentCode failed for $uuid: ${e.message}")
+					println("pollInbox failed for $uuid: ${e.message}")
 				}
 			}
 		}
 	}
 
-	val opponentCode = AtomicReference<Frame.Text?>(null)
-	suspend fun sendOpponentCode() {
+	suspend fun pollInbox() {
 		while(true) {
 			delay(100)
-            val codeMessage = opponentCode.load() ?: continue
-            opponentCode.store(null)
+            val codeMessage = messageBox.load() ?: continue
+            messageBox.store(null)
 			websocket.send(codeMessage)
 		}
 	}
@@ -76,6 +86,11 @@ class Player(
 						val result = App.runSandboxedRISCV(codeObj.code)
 						val success = result.trim() == App.testProblem.solution
 						val message = if(success) "" else "Incorrect Answer\n Output: ${result}"
+						if(!success && game != null) {
+							game!!.health[this] = game!!.health[this]!!.minus(1)
+							val opponents = game?.players?.filter { it != this }
+							game?.sendOppInfo(this)
+						}
 
 						websocket.outgoing.send(createMessage(
 							"result",
@@ -99,7 +114,6 @@ class Player(
 	}
 
 
-	val gameStarted = AtomicBoolean(false)
 
 	suspend fun passWebsocketControl() {
 		var waitTime = 0
@@ -119,6 +133,9 @@ class Game(
     val id: String,
     val players: MutableList<Player>,
 ) {
+	val health: MutableMap<Player, Int> = mutableMapOf<Player, Int>().also { map -> players.forEach { map[it] = 5 } }
+	val previousProblems: MutableSet<RISCVProblem> = mutableSetOf()
+
     suspend fun play() {
         for (player in players) {
 			player.gameStarted.store(true)
@@ -127,8 +144,15 @@ class Game(
 
 	suspend fun send(recievers: List<Player>, message: Frame.Text) {
 		for (player in recievers) {
-			player.opponentCode.store(message)
+			player.messageBox.store(message)
+		}
+	}
+
+	suspend fun sendOppInfo(self: Player) {
+		for (player in players) {
+			if(player == self) continue
+
+			self.messageBox.store(createMessage("offInfo", OppInfo(player.name!!, "risc-v", health[player]!!)))
 		}
 	}
 }
-
