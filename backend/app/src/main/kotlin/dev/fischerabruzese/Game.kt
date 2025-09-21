@@ -4,10 +4,6 @@ import dev.fischerabruzese.RecievedMessageType.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import io.ktor.server.websocket.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.internal.readJson
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 
@@ -21,10 +17,10 @@ class Player(
 		websocket.outgoing.send(createMessage("success", Unit))
 		delay(50)
 		websocket.outgoing.send(
-			createMessage("problem", ProblemMessage(App.testProblem.description, App.testProblem.starterCode)),
+			createMessage("problem", ProblemMessage(App.riscVTestProblem.description, App.riscVTestProblem.starterCode)),
 		)
 		websocket.outgoing.send(
-			createMessage("opponentCode", OpponentCode(App.testProblem.starterCode)),
+			createMessage("opponentCode", OpponentCode(App.riscVTestProblem.starterCode)),
 		)
 
 		coroutineScope {
@@ -77,7 +73,7 @@ class Player(
 					val codeObj = jsonParse<CodeSubmission>((frame as Frame.Text).readText())
 					// println("---Recieved code from $uuid---\n${codeObj.code.prependIndent("\t|")}\n---")
 					try {
-						val result = App.runSandboxedPython(codeObj.code)
+						val result = App.runSandboxedRISCV(codeObj.code)
 						val success = result.trim() == App.testProblem.solution
 						val message = if(success) "" else "Incorrect Answer\n Output: ${result}"
 
