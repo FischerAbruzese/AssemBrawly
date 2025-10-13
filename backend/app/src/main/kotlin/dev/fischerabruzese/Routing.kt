@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.seconds
 fun Application.configureRouting() {
     routing {
         get("/") {
-            call.respondText("Hello World!")
+            call.respondText("omg hi!!!")
         }
     }
 }

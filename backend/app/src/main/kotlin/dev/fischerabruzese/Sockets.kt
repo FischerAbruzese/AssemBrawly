@@ -9,113 +9,115 @@ import kotlinx.coroutines.*
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
-val lobby = GameManager()
-val consolePrinter = ConsolePrinter(lobby)
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
+val gameManager = GameManager()
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
+val consolePrinter = ConsolePrinter(gameManager)
 
-suspend fun DefaultWebSocketServerSession.waitForJoinMessage(timeoutMs: Long): JoinOptions? {
-    return withTimeoutOrNull(timeoutMs) {
-        for (frame in incoming) {
-			when(frame.messageType()) {
-                JOIN -> {
-					val joinInfo = jsonParse<Join>((frame as Frame.Text).readText())
-					return@withTimeoutOrNull JoinOptions("join", joinInfo.name, joinInfo.gameId)
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
+private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId: String) {
+	val game = gameManager.getGame(gameRoomId)
+	val playerId = UUID.randomUUID().toString()
+	val player = Player(playerId, playerId, ws)
+	val status = game.join(player, ws)
+	game.send(createMessage("join_status", JoinStatus(status)), player.uuid)
+
+	// don't process messages until game starts
+	while(!game.gameStarted.load()) {
+		delay(500)
+	}
+
+	game.send(createMessage(
+		"starting",
+		Unit
+	), player.uuid)
+
+	game.send(createMessage(
+		"problem",
+		ProblemMessage(
+			game.problem.description,
+			game.problem.starterCode
+		)
+	), player.uuid)
+
+	for (frame in ws.incoming) {
+		when(frame.messageType()) {
+            NAME -> {
+				val msg = jsonParse<Name>((frame as Frame.Text).readText())
+				player.name = msg.name
+			}
+            RECIEVED_CODE -> {
+				val recieved = jsonParse<RecievedCode>((frame as Frame.Text).readText())
+				game.sendAll {
+					if(it == player) {
+						null
+					} else {
+						createMessage(
+							"opponentCode",
+							OpponentCode(recieved.code)
+						)
+					}
 				}
-                CREATE -> {
-					val joinInfo = jsonParse<Create>((frame as Frame.Text).readText())
-					return@withTimeoutOrNull JoinOptions("create", joinInfo.name, null)
+			}
+            CODE_SUBMISSION -> {
+				val codeObj = jsonParse<CodeSubmission>((frame as Frame.Text).readText())
+				try {
+					//run code
+					val result = App.runSandboxedRISCV(codeObj.code)
+					val success = result.trim() == game.problem.solution
+					val message = 
+						if(success) 
+							"Correct Answer\n Output: ${result}" 
+						else 
+							"Incorrect Answer\n Output: ${result}"
+
+					//heath update your opponent
+					if(success) {
+						game.sendAll { other -> 
+							if(other==player) {
+								null
+							} else {
+								player.health--
+								createMessage(
+									"healthUpdate",
+									HealthUpdate(player.health)
+								)
+							}
+						}
+					}
+
+					//TODO: Send opp info
+
+					game.send(createMessage(
+						"result", 
+						ResultMessage(success, message)
+					), player.uuid)
+
+					if(success) {
+						delay(1500)
+						game.newProblem()
+					}
+
+				} catch (e: Exception) {
+					//TODO: Send opp info
+
+					game.send(createMessage(
+						"result",
+						ResultMessage(false, "Execution error: ${e.message}")
+					), player.uuid)
 				}
-				RECIEVED_CODE,
-                CODE_SUBMISSION -> { 
-					outgoing.send(createMessage("info", InfoMessage("You must send a join message first!"))) 
-				}
-				UNSUPPORTED -> {
-					outgoing.send(createMessage("info", InfoMessage("You must send a join message first! (btw I don't recognize this message type)"))) 
-				}
-                CLOSE -> { throw IllegalStateException("Unreachable code") }
-            }
+			}
+            CLOSE -> {
+				
+			}
+            UNSUPPORTED -> {
+				
+			}
         }
-        null
-    }
-}
-
-suspend fun DefaultWebSocketServerSession.executeJoinAction(joinMessage: JoinOptions, player: Player) {
-	when (joinMessage.action) {
-		"join" -> {
-			when (lobby.addPlayerToGame(joinMessage.gameId, player)) {
-				GameManager.ConnectToGame.SUCCESS -> {
-					lobby.getGame(joinMessage.gameId!!)!!.play()
-				}
-				GameManager.ConnectToGame.NOT_ENOUGH_PLAYERS -> {
-					outgoing.send(createMessage("not enough players", Unit))
-				}
-				GameManager.ConnectToGame.GAME_FULL -> {
-					outgoing.send(createMessage("game full", Unit))
-				}
-			}
-		}
-		"create" -> {
-			when (val game = lobby.addPlayerToGame(null, player)) {
-				GameManager.ConnectToGame.SUCCESS -> {
-					println("something really went wrong")
-				}
-				GameManager.ConnectToGame.NOT_ENOUGH_PLAYERS -> {
-					val message = CreatedGame(player.game?.id ?: "something went wrong")
-					outgoing.send(createMessage<CreatedGame>("created game", message))
-				}
-				GameManager.ConnectToGame.GAME_FULL -> {
-					println("something really went wrong")
-				}
-			}
-
-		}
-		else -> {}
 	}
 }
 
-suspend fun DefaultWebSocketServerSession.enterLobby(player: Player) {
-	lobby.registerPlayer(player)
-
-	val joinMessage = waitForJoinMessage(600000) 
-	// println("---Recieved Join Message from ${playerID}---")
-	if (joinMessage == null) {
-		this.close(CloseReason(1000, "timeout"))	
-	}
-	else {
-		player.name = joinMessage.name
-		executeJoinAction(joinMessage, player)
-	}
-
-	player.passWebsocketControl()
-
-	enterLobby(player)
-}
-
-suspend fun gameGarbageCollector(gameManager: GameManager) {
-	while(true) {
-		val deadGame = lobby.games.map {it.value}.find {it.players.all{it2 -> !it2.websocket.isActive}}
-		if (deadGame != null) {
-			gameManager.killGame(deadGame)
-			delay(500)
-		}
-		else {
-			delay(30_000)
-		}
-	}
-}
-
-suspend fun lobbyGarbageCollector(gameManager: GameManager) {
-	while(true) {
-		val player = lobby.lobby.find {!it.websocket.isActive}
-		if (player != null) {
-			gameManager.lobby.remove(player)
-			delay(500)
-		}
-		else {
-			delay(30_000)
-		}
-	}
-}
-
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
 fun Application.configureSockets() {
     install(WebSockets) {
         pingPeriod = 60.seconds
@@ -130,21 +132,14 @@ fun Application.configureSockets() {
         consolePrinter.startPrinting(this)
     }
 
-	launch {
-		gameGarbageCollector(lobby)
-	}
-
-	launch {
-		lobbyGarbageCollector(lobby)
-	}
-    
     routing {
-		webSocket("/2player") { 
-			val playerID = UUID.randomUUID().toString()
-			// println("---New Player Conected {$playerID}---")
-			val player = Player(playerID, null, this, null)
-
-			enterLobby(player)
+		webSocket("/ws/{room}") { 
+			try {
+				val room = call.parameters["room"]!!
+				handleSession(this, room)
+			} catch (e: Throwable) {
+				close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "closing"))
+			}
 		}
 	}
 }

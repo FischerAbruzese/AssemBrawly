@@ -59,6 +59,7 @@ class App {
     }
 }
 
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
 fun Application.module() {
     configureSockets()
     configureSerialization()

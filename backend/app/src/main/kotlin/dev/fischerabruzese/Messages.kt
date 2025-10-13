@@ -22,56 +22,27 @@ data class WebSocketMessage<T>(
     val data: T,
 )
 
+/// OUTGOING
 @Serializable
+@Deprecated("Unused: may come back in a later release")
 data class InfoMessage(
     val message: String,
 )
-
+@Serializable
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
+data class JoinStatus(
+	val status: GameRoom.ConnectToGame
+)
 @Serializable
 data class ProblemMessage(
     val description: String,
     val starterCode: String,
 )
-
 @Serializable
 data class ResultMessage(
     val success: Boolean,
     val message: String = "",
 )
-
-@Serializable
-data class CodeSubmission(
-    val code: String,
-)
-
-@Serializable
-data class Join(
-    val gameId: String,
-	val name: String,
-)
-
-@Serializable
-data class Create(
-	val name: String,
-)
-
-
-data class JoinOptions(
-    val action: String,
-	val name: String,
-    val gameId: String?,
-)
-
-@Serializable
-data class CreatedGame(
-    val id: String,
-)
-
-@Serializable
-data class OpponentCode(
-	val code: String
-)
-
 @Serializable
 data class OppInfo(
 	val name: String,
@@ -79,34 +50,44 @@ data class OppInfo(
 	val health: Int,
 	val console: String,
 )
-
+@Serializable
+data class OpponentCode(
+	val code: String
+)
+@Serializable
+data class GameOver(
+	val winner: String
+)
 @Serializable
 data class HealthUpdate(
 	val newHealth: Int
 )
 
+/// INBOUND
 @Serializable
-data class RecievedCode(
+data class Name(
+	val name: String,
+)
+@Serializable
+data class CodeSubmission(
+    val code: String,
+)
+@Serializable
+data class RecievedCode( // this is what we will send to the opponents
 	val code: String
 )
 
-@Serializable
-data class GameOver(
-	val winner: String
-)
-
+// Helpers
 enum class RecievedMessageType {
-    JOIN,
-    CREATE,
-    RECIEVED_CODE,
+    NAME,
     CODE_SUBMISSION,
+    RECIEVED_CODE,
     CLOSE,
 	UNSUPPORTED,
 }
 
 inline fun<reified T> jsonParse(message: String): T = Json.decodeFromString<WebSocketMessage<T>>(message).data
 
-// Enhanced message type detection with logging
 fun Frame.messageType(): RecievedMessageType {
     when(this) {
         is Frame.Text -> {
@@ -114,56 +95,37 @@ fun Frame.messageType(): RecievedMessageType {
                 val text = this.readText()
                 val message = Json.decodeFromString<JsonObject>(text)
                 return when(val type = message["type"]?.jsonPrimitive?.content) {
-                    "join" -> {
-                        debugLogMessage("PARSE", "Detected JOIN message")
-                        RecievedMessageType.JOIN
-                    }
-                    "create" -> {
-                        debugLogMessage("PARSE", "Detected CREATE message")
-                        RecievedMessageType.CREATE
+                    "name" -> {
+                        RecievedMessageType.NAME
                     }
                     "submitUserCode" -> {
-                        debugLogMessage("PARSE", "Detected CODE_SUBMISSION message")
                         RecievedMessageType.CODE_SUBMISSION
                     }
                     "userCode" -> {
-                        debugLogMessage("PARSE", "Detected RECIEVED_CODE message")
                         RecievedMessageType.RECIEVED_CODE
                     }
                     else -> {
-                        debugLogMessage("PARSE", "Unknown message type: '$type'")
                         RecievedMessageType.UNSUPPORTED
                     }
                 }
             } catch (e: Exception) {
-                debugLogMessage("PARSE_ERROR", "Failed to parse text frame: ${e.message}")
                 return RecievedMessageType.UNSUPPORTED
             }
         }
         is Frame.Close -> {
-            debugLogMessage("PARSE", "Detected CLOSE frame")
             return RecievedMessageType.CLOSE
         }
         is Frame.Ping -> {
-            debugLogMessage("PARSE", "Received PING frame (shouldn't reach messageType)")
             return RecievedMessageType.UNSUPPORTED
         }
         is Frame.Pong -> {
-            debugLogMessage("PARSE", "Received PONG frame (shouldn't reach messageType)")
             return RecievedMessageType.UNSUPPORTED
         }
         is Frame.Binary -> {
-            debugLogMessage("PARSE", "Received BINARY frame (unsupported)")
             return RecievedMessageType.UNSUPPORTED
         }
         else -> {
-            debugLogMessage("PARSE_ERROR", "Unknown frame type: ${this::class.simpleName}")
             throw Exception("Unsupported Frame Type: ${this::class.simpleName}")
         }
     }
-}
-
-private fun debugLogMessage(category: String, message: String) {
-    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))
-    System.err.println("            [$timestamp] [MSG_$category] $message")
 }

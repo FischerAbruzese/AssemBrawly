@@ -3,50 +3,24 @@ package dev.fischerabruzese
 import kotlinx.coroutines.cancel
 import java.util.UUID
 
+@kotlin.concurrent.atomics.ExperimentalAtomicApi
 class GameManager {
-    val games: HashMap<String, Game> = hashMapOf()
-    val lobby: MutableSet<Player> = mutableSetOf()
+    // game id to room
+    val games: HashMap<String, GameRoom> = hashMapOf()
 
-    fun getGame(id: String) = games[id]
-
-    enum class ConnectToGame {
-        SUCCESS,
-        NOT_ENOUGH_PLAYERS,
-        GAME_FULL,
-    }
-
-    fun registerPlayer(player: Player) {
-        lobby += player
-    }
-
-    fun addPlayerToGame(
-        id: String?,
-        player: Player,
-    ): ConnectToGame {
-        if (!(player in lobby)) {
-            throw Exception("Player was not waiting in lobby")
+    fun getGame(id: String): GameRoom {
+        if (games[id] == null) {
+            return newRoom(id)
         }
-        lobby -= player
-
-        val game = if (id != null) games.getOrElse(id, ::newGame) else newGame()
-        if (game.players.size >= 2) {
-            return ConnectToGame.GAME_FULL
-        }
-        game.players.add(player)
-        player.game = game
-        return if (game.players.size == 2) ConnectToGame.SUCCESS else ConnectToGame.NOT_ENOUGH_PLAYERS
+        return games[id]!!
     }
 
-    private fun newGame(): Game {
-        val game = Game(UUID.randomUUID().toString().take(6), mutableListOf())
-        games[game.id] = game
-        return game
-    }
-
-    fun killGame(game: Game) {
-        for (player in game.players) {
-            player.websocket.cancel("Someone killed the game")
-        }
-        games.remove(game.id)
+    fun newRoom(roomId: String = UUID.randomUUID().toString()): GameRoom {
+        val gameRoom =
+            GameRoom(roomId) {
+                games -= roomId
+            }
+        games[roomId] = gameRoom
+        return gameRoom
     }
 }
