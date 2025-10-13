@@ -30,20 +30,24 @@ data class InfoMessage(
 )
 @Serializable
 @kotlin.concurrent.atomics.ExperimentalAtomicApi
+// Message to send when we receive a websocket connection to a game
 data class JoinStatus(
 	val status: GameRoom.ConnectToGame
 )
 @Serializable
+// Tell frontend we have a new problem
 data class ProblemMessage(
     val description: String,
     val starterCode: String,
 )
 @Serializable
+// Result of a code submission
 data class ResultMessage(
     val success: Boolean,
     val message: String = "",
 )
 @Serializable
+// telling you the opponents info
 data class OppInfo(
 	val name: String,
 	val language: String,
@@ -51,6 +55,7 @@ data class OppInfo(
 	val console: String,
 )
 @Serializable
+// telling you the opponents code
 data class OpponentCode(
 	val code: String
 )
@@ -59,6 +64,7 @@ data class GameOver(
 	val winner: String
 )
 @Serializable
+// you should update your health
 data class HealthUpdate(
 	val newHealth: Int
 )

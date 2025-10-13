@@ -23,6 +23,8 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
         NOT_ENOUGH_PLAYERS,
         GAME_FULL,
     }
+
+	// add player to sessions and return the status (starting the game if they're the second player)
     fun join(player: Player, ws: DefaultWebSocketServerSession): ConnectToGame {
 		if (sessions.size == 2) return ConnectToGame.GAME_FULL
 
@@ -48,17 +50,20 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
         }
     }
 
+	// send message to player from uuid
     suspend fun send(data:Frame.Text, to: String) {
         val player = sessions[to.toString()] ?: return
         player.websocket.send(data)
     }
 
+	// send message to all players in this game
 	suspend fun sendAll(data: Frame.Text) {
 		sessions.values.forEach {
 			it.websocket.send(data)
 		}
 	}
 
+	// generate a message for all players send non-null messages
 	suspend fun sendAll(messageGen: (Player)-> Frame.Text?) {
 		sessions.values.forEach {
 			val msg = messageGen(it) 

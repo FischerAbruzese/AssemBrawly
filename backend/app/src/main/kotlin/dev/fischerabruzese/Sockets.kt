@@ -15,7 +15,9 @@ val gameManager = GameManager()
 val consolePrinter = ConsolePrinter(gameManager)
 
 @kotlin.concurrent.atomics.ExperimentalAtomicApi
+// This is where most stuff happens. We listen for messages and handle them approperiately
 private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId: String) {
+	// setup
 	val game = gameManager.getGame(gameRoomId)
 	val playerId = UUID.randomUUID().toString()
 	val player = Player(playerId, playerId, ws)
