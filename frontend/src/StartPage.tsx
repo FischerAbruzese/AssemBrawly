@@ -29,7 +29,7 @@ const StartPage: React.FC<StartPageProps> = ({
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
   const [currTypingGameId, setCurrTypingGameId] = useState("");
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
-  const { isConnected, gameId, setGameId, requestNewGame } = webSocketProps;
+  const { isConnected, gameId, setGameId, requestNewGame, joinGame } = webSocketProps;
 
   const {
     playerCode: userCode,
@@ -88,6 +88,7 @@ const StartPage: React.FC<StartPageProps> = ({
   const handleJoinGame = () => {
     if (currTypingGameId.trim() && userName.trim()) {
       setGameId(currTypingGameId.trim());
+      joinGame(currTypingGameId.trim());
       console.log(`Joining game ${currTypingGameId} as ${userName}`);
       showToastMessage(
         `Attempting to join game ${currTypingGameId} as ${userName} ...`
