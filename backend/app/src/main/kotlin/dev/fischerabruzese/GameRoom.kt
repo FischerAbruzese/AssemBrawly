@@ -7,6 +7,8 @@ import dev.fischerabruzese.*
 import dev.fischerabruzese.WebSocketMessage
 import kotlin.uuid.Uuid
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 
 @kotlin.concurrent.atomics.ExperimentalAtomicApi
 class GameRoom(val id: String, val onDispose:()->Unit) {
@@ -26,7 +28,7 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
 
 	// add player to sessions and return the status (starting the game if they're the second player)
     fun join(player: Player, ws: DefaultWebSocketServerSession): ConnectToGame {
-		if (sessions.size == 2) return ConnectToGame.GAME_FULL
+		if (sessions.size >= 2) return ConnectToGame.GAME_FULL
 
         if(!sessions.containsKey(player.uuid)) {
 			player.websocket = ws
@@ -52,7 +54,8 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
 
 	// send message to player from uuid
     suspend fun send(data:Frame.Text, to: String) {
-        val player = sessions[to.toString()] ?: return
+		print("Sending Text Frame -> {$to}: ${Json.decodeFromString<JsonObject>(data.readText())}\n\n")
+        val player = sessions[to] ?: return
         player.websocket.send(data)
     }
 
@@ -74,7 +77,17 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
 	}
 
 	suspend fun newProblem() {
-		TODO()
+		problem = PROBLEM_SET.random()
+		this.sendAll {
+			createMessage(
+				"problem",
+				ProblemMessage(
+					this.problem.description,
+					this.problem.starterCode
+				)
+			)
+		}
+
 	}
 
     suspend fun close() {

@@ -22,7 +22,12 @@ private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId:
 	val playerId = UUID.randomUUID().toString()
 	val player = Player(playerId, playerId, ws)
 	val status = game.join(player, ws)
-	game.send(createMessage("join_status", JoinStatus(status)), player.uuid)
+	if (status != GameRoom.ConnectToGame.SUCCESS) {
+		game.send(createMessage("join_status", JoinStatus(status)), player.uuid)
+	}
+	if (status == GameRoom.ConnectToGame.GAME_FULL) {
+		ws.close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "The games already full please kindly leave"))
+	}
 
 	// don't process messages until game starts
 	while(!game.gameStarted.load()) {
@@ -47,6 +52,20 @@ private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId:
             NAME -> {
 				val msg = jsonParse<Name>((frame as Frame.Text).readText())
 				player.name = msg.name
+				game.sendAll {
+					if (it == player) {null}
+					else {
+						createMessage(
+							"oppInfo",
+							OppInfo(
+								player.name!!,
+								"RISC-V",
+								player.health,
+								""
+							)
+						)
+					}
+				}
 			}
             RECIEVED_CODE -> {
 				val recieved = jsonParse<RecievedCode>((frame as Frame.Text).readText())
@@ -88,7 +107,20 @@ private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId:
 						}
 					}
 
-					//TODO: Send opp info
+					game.sendAll {
+						if (it == player) {null}
+						else {
+							createMessage(
+								"oppInfo",
+								OppInfo(
+									player.name ?: "unset name",
+									"RISC-V",
+									player.health,
+									message	
+								)
+							)
+						}
+					}
 
 					game.send(createMessage(
 						"result", 
@@ -99,9 +131,21 @@ private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId:
 						delay(1500)
 						game.newProblem()
 					}
-
 				} catch (e: Exception) {
-					//TODO: Send opp info
+					game.sendAll {
+						if (it == player) {null}
+						else {
+							createMessage(
+								"oppInfo",
+								OppInfo(
+									player.name ?: "unset name",
+									"RISC-V",
+									player.health,
+									"Execution error: ${e.message}"
+								)
+							)
+						}
+					}
 
 					game.send(createMessage(
 						"result",
@@ -142,6 +186,9 @@ fun Application.configureSockets() {
 			} catch (e: Throwable) {
 				close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "closing"))
 			}
+		}
+		webSocket("/") {
+
 		}
 	}
 }

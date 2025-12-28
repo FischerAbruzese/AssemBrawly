@@ -94,11 +94,12 @@ enum class RecievedMessageType {
 
 inline fun<reified T> jsonParse(message: String): T = Json.decodeFromString<WebSocketMessage<T>>(message).data
 
-fun Frame.messageType(): RecievedMessageType {
+fun Frame.messageType(name: String = "not labeled"): RecievedMessageType {
     when(this) {
         is Frame.Text -> {
             try {
                 val text = this.readText()
+				println("Recieved Text Frame <- : \n$text\n\n")
                 val message = Json.decodeFromString<JsonObject>(text)
                 return when(val type = message["type"]?.jsonPrimitive?.content) {
                     "name" -> {
@@ -119,19 +120,20 @@ fun Frame.messageType(): RecievedMessageType {
             }
         }
         is Frame.Close -> {
+			println("Recieved Frame Close!")
             return RecievedMessageType.CLOSE
         }
         is Frame.Ping -> {
+			println("Recieved Frame Ping!")
             return RecievedMessageType.UNSUPPORTED
         }
         is Frame.Pong -> {
+			println("Recieved Frame Pong!")
             return RecievedMessageType.UNSUPPORTED
         }
         is Frame.Binary -> {
+			println("Recieved Frame Binary!")
             return RecievedMessageType.UNSUPPORTED
-        }
-        else -> {
-            throw Exception("Unsupported Frame Type: ${this::class.simpleName}")
         }
     }
 }
