@@ -27,6 +27,7 @@ class ConsolePrinter(private val gameManager: GameManager) {
     }
     
     private fun GameManager.printGameState() {
+		return
 		print("\u001b[2J")
 
         println("┌─ ACTIVE GAMES (${games.size}) ────────────────────────────────────────────────────────")
