@@ -130,6 +130,7 @@ private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId:
 					if(success) {
 						delay(1500)
 						game.newProblem()
+						//might close game (which will close ws connections)
 					}
 				} catch (e: Exception) {
 					game.sendAll {
@@ -154,7 +155,7 @@ private suspend fun handleSession(ws: DefaultWebSocketServerSession, gameRoomId:
 				}
 			}
             CLOSE -> {
-				
+				game.leave(ws)
 			}
             UNSUPPORTED -> {
 				

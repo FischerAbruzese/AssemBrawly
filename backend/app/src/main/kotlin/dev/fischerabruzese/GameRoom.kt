@@ -76,7 +76,15 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
 		}
 	}
 
-	suspend fun newProblem() {
+	/// this will terminate the game if the game is over
+	suspend fun newProblem(): Boolean {
+		for (player in sessions.values) {
+			if (player.health <= 0) {
+				close()
+				return false
+			}
+		}
+
 		problem = PROBLEM_SET.random()
 		this.sendAll {
 			createMessage(
@@ -87,6 +95,7 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
 				)
 			)
 		}
+		return true
 
 	}
 
@@ -95,5 +104,6 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
             it.websocket.close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, "closing"))
         }
         sessions.clear()
+		onDispose()
     }
 }

@@ -23,4 +23,8 @@ class GameManager {
         games[roomId] = gameRoom
         return gameRoom
     }
+
+    fun closeRoom(roomId: String) {
+        games.remove(roomId)
+    }
 }
