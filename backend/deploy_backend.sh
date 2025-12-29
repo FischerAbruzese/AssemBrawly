@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
+set -x
+
 ./docker_config.sh
-./gradlew run
+./gradlew run --no-daemon
