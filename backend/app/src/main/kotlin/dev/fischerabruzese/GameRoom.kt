@@ -4,6 +4,9 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import java.util.concurrent.ConcurrentHashMap
 import dev.fischerabruzese.*
+import kotlinx.coroutines.*
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import dev.fischerabruzese.WebSocketMessage
 import kotlin.uuid.Uuid
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -12,10 +15,21 @@ import kotlinx.serialization.json.*
 
 @kotlin.concurrent.atomics.ExperimentalAtomicApi
 class GameRoom(val id: String, val onDispose:()->Unit) {
-
-    var gameStarted: AtomicBoolean = AtomicBoolean(false)
+	var gameStarted: AtomicBoolean = AtomicBoolean(false)
 	var problem: RISCVProblem = PROBLEM_SET.random()
     private val sessions = ConcurrentHashMap<String, Player>()
+
+	init {
+		CoroutineScope(Dispatchers.Default).launch {
+			while (true) {
+				delay(10.seconds)
+				if (sessions.none{it.value.websocket.isActive}) {
+					close()
+					break
+				}
+			}
+		}
+	}
 
 	fun playersIterDebug() =
 		sessions.asIterable().map {it.value}
@@ -46,6 +60,7 @@ class GameRoom(val id: String, val onDispose:()->Unit) {
     }
 
     fun leave(ws: DefaultWebSocketServerSession) {
+		println("PLAYER LEFT!!!!!!!!!!!!!!!!!!!")
         sessions.values.removeIf { it.websocket == ws }
         if (sessions.isEmpty()) {
             onDispose()
