@@ -1,4 +1,3 @@
-# Java 21 (LTS) runtime on Debian slim
 FROM eclipse-temurin:25-jdk-jammy
 
 # Install common tools your script may need; add more as required (curl, git, jq, unzip, bash)
