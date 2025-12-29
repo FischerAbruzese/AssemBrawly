@@ -29,7 +29,7 @@ const StartPage: React.FC<StartPageProps> = ({
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
   const [currTypingGameId, setCurrTypingGameId] = useState("");
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
-  const { isConnected, gameId, setGameId, requestNewGame, joinGame } = webSocketProps;
+  const { isConnected, gameId, setGameId, joinGame } = webSocketProps;
 
   const {
     playerCode: userCode,
@@ -67,22 +67,22 @@ const StartPage: React.FC<StartPageProps> = ({
     setTimeout(() => setToastMessage(""), 300);
   };
 
-  const handleCreateGame = async () => {
-  requestNewGame();
-  console.log("Creating new game ...");
+  // const handleCreateGame = async () => {
+  // requestNewGame();
+  // console.log("Creating new game ...");
 
-  if (gameId) {
-    try {
-      await navigator.clipboard.writeText(gameId);
-      console.log('Copied the game id: ' + gameId);
-      showToastMessage(
-        "Game code copied to clipboard! Share it with a friend to start a game!"
-      );
-    } catch (err) {
-      console.error('Error in copying text: ', err);
-    }
-  }
-};
+  // if (gameId) {
+  //   try {
+  //     await navigator.clipboard.writeText(gameId);
+  //     console.log('Copied the game id: ' + gameId);
+  //     showToastMessage(
+  //       "Game code copied to clipboard! Share it with a friend to start a game!"
+  //     );
+  //   } catch (err) {
+  //     console.error('Error in copying text: ', err);
+  //   }
+  // }
+// };
 
 
   const handleJoinGame = () => {
@@ -104,15 +104,15 @@ const StartPage: React.FC<StartPageProps> = ({
   };
 
   // Get tooltip message for Create Game button
-  const getCreateGameTooltip = () => {
-    if (!isConnected) return "Connect to server to create a game";
-    if (!userName.trim()) return "Enter your name to create a game";
-    return null;
-  };
+  // const getCreateGameTooltip = () => {
+  //   if (!isConnected) return "Connect to server to create a game";
+  //   if (!userName.trim()) return "Enter your name to create a game";
+  //   return null;
+  // };
 
   // Get tooltip message for Join Game button
   const getJoinGameTooltip = () => {
-    if (!isConnected) return "Connect to server to join a game";
+    // if (!isConnected) return "Connect to server to join a game";
     if (!userName.trim()) return "Enter your name to join a game";
     if (!currTypingGameId.trim()) return "Enter a game code to join";
     return null;
@@ -322,7 +322,8 @@ const StartPage: React.FC<StartPageProps> = ({
           {/* Action Cards */}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {/* Create Game Card */}
-            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
+            
+            {/* <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
               <div className="text-center flex-1">
                 <div className="bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Play className="w-8 h-8 text-green-400" />
@@ -354,7 +355,7 @@ const StartPage: React.FC<StartPageProps> = ({
                   {gameId ? "Game code: " + gameId : "Create New Game"}
                 </button>
 
-                {/* Create Game Tooltip */}
+                /* Create Game Tooltip 
                 {tooltipVisible === "create" && getCreateGameTooltip() && (
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
                     <div className="bg-gray-700 text-gray-100 text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
@@ -364,7 +365,8 @@ const StartPage: React.FC<StartPageProps> = ({
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
+            
 
             {/* Join Game Card */}
             <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-8 hover:shadow-md transition-shadow duration-200 flex flex-col">
@@ -397,15 +399,13 @@ const StartPage: React.FC<StartPageProps> = ({
                   onClick={handleJoinGame}
                   disabled={
                     !currTypingGameId.trim() ||
-                    !userName.trim() ||
-                    !isConnected
+                    !userName.trim()
                   }
                   className={`
                     w-full px-6 py-3 
                     ${
                       !currTypingGameId.trim() ||
-                      !userName.trim() ||
-                      !isConnected
+                      !userName.trim()
                         ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 text-white font-medium"
                     }

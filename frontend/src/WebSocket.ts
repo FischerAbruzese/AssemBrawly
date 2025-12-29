@@ -15,14 +15,13 @@ const blankRunResponse: RunResponse = {
 export const runningRunResponse: string = "Running...";
 
 export interface WebSocketProps {
-  isConnected: boolean;
   problem: Problem;
   gameId: string;
+  isConnected: boolean;
   submitCode: () => void;
   syncCode: (code: string) => void;
   setProblem: (problem: Problem) => void;
   setGameId: (gameId: string) => void;
-  requestNewGame: () => void;
   joinGame: (gId: string) => void;
 }
 export const useWebSocket = (
@@ -31,8 +30,7 @@ export const useWebSocket = (
   user: Player,
   opponent: Player
 ) => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const socket = useRef<WebSocket | null>(null);
   const [problem, setProblem] = useState<Problem>(blankProblem);
   const [gameId, setGameId] = useState("");
 
@@ -60,6 +58,8 @@ export const useWebSocket = (
 
   const opponentHealthRef = useRef(opponent.playerHealth);
 
+  const isConnected = socket.current !== null && socket.current.readyState === WebSocket.OPEN;
+
   // Update ref whenever opponent health changes
   useEffect(() => {
     opponentHealthRef.current = opponent.playerHealth;
@@ -74,14 +74,12 @@ export const useWebSocket = (
     }
   };
 
-  //WebSocket management
-  useEffect(() => {
-    const ws = new WebSocket(connectionLocation);
+  const makeSocket = (address: string) => {
+    const ws = new WebSocket(address);
 
     ws.onopen = () => {
-      console.log("Connected to WebSocket");
-      setIsConnected(true);
-      setSocket(ws);
+      console.log("Connected to WebSocket: ", address);
+      socket.current = ws;
     };
 
     ws.onmessage = (event) => {
@@ -104,13 +102,24 @@ export const useWebSocket = (
               decrementOpponentHealth();
             }
             break;
-          case "success":
-            console.log("Success");
+          case "starting":
+            console.log("Starting");
+            console.log("Sending username: ", userName);
+            if (socket.current !== null){
+              socket.current.send(
+              JSON.stringify({
+                type: "name",
+                data: { name: userName },
+              })
+            )}
+            else{
+              console.log("Failed to send name", socket)
+            }
             setGameRunning(true);
             break;
-          case "not enough players":
-            break;
-          case "game full":
+          case "join_status": //Only triggers on failures
+            const status: string = data.data.status;
+            console.log("Join status: ", status);
             break;
           case "created game":
             console.log("Created game: ", data.data);
@@ -156,50 +165,26 @@ export const useWebSocket = (
 
     ws.onclose = () => {
       console.log("Disconnected from WebSocket");
-      setIsConnected(false);
+      socket.current = null;
     };
 
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
     };
 
-    return () => {
-      ws.close();
-    };
-  }, [
-    connectionLocation,
-    setGameRunning,
-    setOpponentCode,
-    setOpponentConsole,
-    setOpponentHealth,
-    setOpponentLanguage,
-    setOpponentName,
-    setUserCode,
-    setUserHealth,
-  ]);
-
-  const requestNewGame = () => {
-    if (socket) {
-      socket.send(JSON.stringify({ type: "create", data: { name: userName } }));
-    }
-  };
+    return ws;
+  }
 
   const joinGame = (gId: string) => {
-    if (socket) {
-      console.log("Sending join to gameId: ", gId);
-      socket.send(
-        JSON.stringify({
-          type: "join",
-          data: { name: userName, gameId: gId },
-        })
-      );
-    }
+    const gameLocation = connectionLocation + "/ws/" + gId;
+    console.log("Attempting to connect to websocket: ", gameLocation);
+    makeSocket(gameLocation)
   };
 
   const submitCode = () => {
-    if (socket) {
+    if (socket.current) {
       setUserConsole(runningRunResponse);
-      socket.send(
+      socket.current.send(
         JSON.stringify({ type: "submitUserCode", data: { code: userCode } })
       );
     }
@@ -207,8 +192,8 @@ export const useWebSocket = (
 
   //Sync user code
   const syncCode = (code: string) => {
-    if (socket) {
-      socket.send(
+    if (socket.current) {
+      socket.current.send(
         JSON.stringify({ type: "userCode", data: { code: code } })
       );
     }
@@ -216,17 +201,16 @@ export const useWebSocket = (
 
   return {
     // State
-    isConnected,
     problem,
     userCode,
     gameId,
 
     // Methods
+    isConnected,
     joinGame,
     submitCode,
     syncCode,
     setProblem,
     setGameId,
-    requestNewGame,
   };
 };
